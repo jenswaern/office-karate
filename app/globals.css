@@ -6,6 +6,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("/assets/fonts/press-start-2p.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --ink: #10142d;
   --paper: #f7e9bf;
@@ -30,6 +38,7 @@ button { font: inherit; }
 .game-shell {
   min-height: 100vh;
   position: relative;
+  font-family: "Press Start 2P", "Micro", "Courier New", monospace;
   background:
     radial-gradient(circle at 50% 110%, rgba(237, 70, 123, .16), transparent 44%),
     #0d1026;
