@@ -1,4 +1,5 @@
 export const MATCH_SECONDS = 60;
+export const MATCH_INTRO_DURATION = 2.4;
 export const ARENA_LIMIT = 5.6;
 export const FIXED_STEP = 1 / 60;
 export const KNOCKDOWN_DURATION = 2;
@@ -14,6 +15,7 @@ export type KnockdownVariant = "back" | "dying" | "sweep";
 
 export type FighterAction =
   | "idle"
+  | "bow"
   | "walk"
   | "jump"
   | "crouch"
@@ -73,6 +75,7 @@ export type HitEffect = {
 
 export type GameState = {
   phase: "playing" | "paused" | "result";
+  introTime: number;
   timeLeft: number;
   winnerId: string | null;
   fighters: FighterState[];
@@ -103,6 +106,7 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
 
   return {
     phase: "playing",
+    introTime: MATCH_INTRO_DURATION,
     timeLeft: MATCH_SECONDS,
     winnerId: null,
     seed,
@@ -119,7 +123,7 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
       score: 0,
       lives: MAX_LIVES,
       knockedOut: false,
-      action: "idle",
+      action: "bow",
       actionTime: 0,
       cooldown: index * 0.15,
       invulnerable: 0,
@@ -149,6 +153,15 @@ export function tickGame(
 
   const next = structuredClone(state);
   const step = Math.min(dt, 0.05);
+
+  if (next.introTime > 0) {
+    next.introTime = Math.max(0, next.introTime - step);
+    for (const fighter of next.fighters) {
+      fighter.action = next.introTime > 0 ? "bow" : "idle";
+      fighter.actionTime = next.introTime > 0 ? fighter.actionTime + step : 0;
+    }
+    return next;
+  }
 
   next.hitEffects = next.hitEffects
     .map((effect) => ({ ...effect, age: effect.age + step }))

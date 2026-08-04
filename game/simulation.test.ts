@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ARENA_LIMIT, BLOCK_DURATION, HIT_EFFECT_DURATION, createGame, setPaused, tickGame } from "./simulation";
+import { ARENA_LIMIT, BLOCK_DURATION, HIT_EFFECT_DURATION, MATCH_INTRO_DURATION, createGame, setPaused, tickGame } from "./simulation";
 
 function inertGame() {
   const game = createGame(["jens", "fia", "peter"], "jens", 42);
+  game.introTime = 0;
   for (const fighter of game.fighters) {
     fighter.control = "player";
     fighter.action = "knockdown";
@@ -17,6 +18,26 @@ describe("Office Karate simulation", () => {
     expect(game.fighters.map((fighter) => fighter.characterId)).toEqual(["jens", "fia", "peter"]);
     expect(game.fighters.filter((fighter) => fighter.control === "player")).toHaveLength(1);
     expect(game.fighters.filter((fighter) => fighter.control === "ai")).toHaveLength(2);
+  });
+
+  it("bows before enabling controls and starting the match timer", () => {
+    const game = createGame(["jens", "fia", "peter"], "jens", 42);
+    const startingPositions = game.fighters.map((fighter) => fighter.x);
+    expect(game.introTime).toBe(MATCH_INTRO_DURATION);
+    expect(game.fighters.every((fighter) => fighter.action === "bow")).toBe(true);
+
+    let intro = tickGame(game, 0.5, { right: true, punch: true });
+    expect(intro.timeLeft).toBe(60);
+    expect(intro.fighters.map((fighter) => fighter.x)).toEqual(startingPositions);
+    expect(intro.fighters.every((fighter) => fighter.action === "bow")).toBe(true);
+
+    while (intro.introTime > 0) intro = tickGame(intro, 0.05, { right: true, punch: true });
+    expect(intro.timeLeft).toBe(60);
+    expect(intro.fighters.every((fighter) => fighter.action === "idle")).toBe(true);
+
+    const playing = tickGame(intro, 1 / 60, { right: true });
+    expect(playing.timeLeft).toBeLessThan(60);
+    expect(playing.fighters[0].x).toBeGreaterThan(startingPositions[0]);
   });
 
   it("scores only once during a connected attack", () => {

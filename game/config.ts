@@ -27,6 +27,7 @@ export const CHARACTERS: CharacterDefinition[] = [
 
 export const ANIMATIONS: AnimationDefinition[] = [
   { id: "fightingIdle", url: "/assets/animations/fighting-idle.json", loop: true, blendTime: 0.18 },
+  { id: "quickFormalBow", url: "/assets/animations/quick-formal-bow.json", loop: false, blendTime: 0.1 },
   { id: "walk", url: "/assets/animations/medium-step-forward.json", loop: true, blendTime: 0.12 },
   { id: "jumping", url: "/assets/animations/jumping.json", loop: false, blendTime: 0.08 },
   { id: "punch", url: "/assets/animations/jab-cross.json", loop: false, blendTime: 0.08, hitFrame: 0.26 },
@@ -40,6 +41,7 @@ export const ANIMATIONS: AnimationDefinition[] = [
 
 export const ACTION_ANIMATION: Record<FighterAction, string> = {
   idle: "fightingIdle",
+  bow: "quickFormalBow",
   walk: "walk",
   jump: "jumping",
   crouch: "fightingIdle",

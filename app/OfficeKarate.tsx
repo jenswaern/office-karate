@@ -16,6 +16,7 @@ import {
   JUMP_DURATION,
   JUMP_GRAVITY,
   JUMP_VELOCITY,
+  MATCH_INTRO_DURATION,
   MAX_LIVES,
   createGame,
   setPaused,
@@ -270,6 +271,7 @@ export default function OfficeKarate() {
 
 const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }[] = [
   { value: "idle", label: "FIGHTING IDLE", duration: 2.5 },
+  { value: "bow", label: "INTRO / QUICK FORMAL BOW", duration: MATCH_INTRO_DURATION },
   { value: "walk", label: "WALK / MEDIUM STEP FORWARD", duration: 2.5 },
   { value: "jump", label: "JUMP / JUMPING", duration: JUMP_DURATION },
   { value: "crouch", label: "CROUCH", duration: 2.5 },
@@ -758,6 +760,8 @@ function sampleClipAtTime(clip: THREE.AnimationClip, samplers: ClipSampler[], ac
           ? BLOCK_DURATION
           : action === "jump"
             ? JUMP_DURATION
+            : action === "bow"
+              ? MATCH_INTRO_DURATION
         : clip.duration;
   const clipTime = looping
     ? actionTime % clip.duration
@@ -818,6 +822,8 @@ function playAnimation(
         ? BLOCK_DURATION
         : fighterAction === "jump"
           ? JUMP_DURATION
+          : fighterAction === "bow"
+            ? MATCH_INTRO_DURATION
       : null;
   next.timeScale = targetDuration ? next.getClip().duration / targetDuration : 1;
   current.current = animationId;
