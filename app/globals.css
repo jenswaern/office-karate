@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Micro";
+  src: url("/assets/fonts/sl-micrographics.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --ink: #10142d;
+  --paper: #f7e9bf;
+  --yellow: #ffcf55;
+  --pink: #ed467b;
+  --cyan: #67d5d2;
+  --purple: #4b3b82;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; background: var(--ink); }
+
+body {
+  color: var(--paper);
+  font-family: "Micro", "Courier New", monospace;
+  overflow: hidden;
+}
+
+button { font: inherit; }
+
+.game-shell {
+  min-height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 110%, rgba(237, 70, 123, .16), transparent 44%),
+    #0d1026;
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  padding: 0 22px 22px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  letter-spacing: .12em;
+  font-size: 9px;
+  z-index: 8;
+}
+
+.brand-chip { color: var(--yellow); }
+.topbar__right { display: flex; gap: 12px; align-items: center; color: #aab0d0; }
+.status-dot { width: 6px; height: 6px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+.icon-button {
+  border: 1px solid #424970;
+  color: var(--paper);
+  background: #151935;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.icon-button:hover, .icon-button:focus-visible { border-color: var(--yellow); color: var(--yellow); }
+
+.stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 2px solid #3b4167;
+  box-shadow: 10px 10px 0 #090b1b, inset 0 0 0 2px #11152e;
+  background: #11152c;
+}
+
+.game-canvas { image-rendering: pixelated; }
+
+.menu-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, .86fr) minmax(340px, .76fr);
+  grid-template-rows: 1fr auto;
+  gap: 18px 32px;
+  padding: clamp(28px, 5vw, 72px);
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(13,16,38,.92) 0%, rgba(13,16,38,.74) 41%, rgba(13,16,38,0) 67%);
+}
+
+.title-lockup { align-self: center; position: relative; z-index: 2; }
+.eyebrow { font-size: 9px; letter-spacing: .25em; color: var(--cyan); }
+.title-lockup h1 {
+  font-size: clamp(52px, 8.3vw, 118px);
+  line-height: .69;
+  margin: 26px 0 25px;
+  letter-spacing: -.085em;
+  color: var(--yellow);
+  text-shadow: 5px 5px 0 var(--pink), 9px 9px 0 #542a68;
+}
+.title-lockup h1 span { color: var(--paper); }
+.title-lockup__plus {
+  position: absolute;
+  top: 27%;
+  left: min(30vw, 390px);
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--cyan);
+  font-size: 18px;
+  transform: rotate(-7deg);
+}
+.tagline { color: #c1c5df; font-size: 10px; letter-spacing: .08em; line-height: 1.65; }
+
+.select-panel {
+  align-self: end;
+  justify-self: end;
+  width: min(100%, 430px);
+  background: rgba(16,20,45,.93);
+  border: 2px solid #59618a;
+  box-shadow: 7px 7px 0 rgba(0,0,0,.45);
+  padding: 13px;
+  pointer-events: auto;
+  z-index: 3;
+}
+.select-panel__heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 3px 12px;
+  color: var(--yellow);
+  font-size: 10px;
+}
+.roster { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.fighter-card {
+  --fighter-color: var(--yellow);
+  position: relative;
+  min-width: 0;
+  height: 72px;
+  border: 2px solid #3d446b;
+  color: #8f96bb;
+  background:
+    linear-gradient(135deg, transparent 48%, rgba(255,255,255,.04) 49%),
+    #171b3a;
+  cursor: pointer;
+  padding: 8px 4px;
+  text-align: left;
+  overflow: hidden;
+}
+.fighter-card:hover { border-color: var(--fighter-color); color: var(--paper); }
+.fighter-card.is-selected {
+  color: var(--ink);
+  border-color: var(--paper);
+  background: var(--fighter-color);
+  box-shadow: inset 0 0 0 2px var(--ink);
+  transform: translateY(-3px);
+}
+.fighter-card__number { display: block; opacity: .65; font-size: 8px; }
+.fighter-card__name { position: absolute; left: 5px; bottom: 7px; font-size: clamp(7px, .7vw, 10px); }
+
+.start-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: var(--yellow);
+  color: var(--ink);
+  margin-top: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: inset 0 -4px 0 #d59c30;
+}
+.start-button:hover, .start-button:focus-visible { background: var(--paper); transform: translateY(-1px); }
+.match-note { color: #7f87ac; text-align: center; font-size: 7px; margin: 9px 0 1px; }
+
+.controls-panel {
+  grid-column: 1 / -1;
+  align-self: end;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  pointer-events: none;
+  color: #8f96bb;
+  font-size: 8px;
+  z-index: 3;
+}
+.controls-panel__label { color: var(--cyan); margin-right: 5px; }
+.controls-panel div { display: flex; align-items: center; gap: 4px; }
+kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 5px; text-align: center; background: #171b38; box-shadow: 0 2px 0 #050716; }
+
+.scoreboard {
+  position: absolute;
+  top: 17px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 5;
+}
+.scoreboard__players { display: flex; gap: 7px; }
+.score-pill {
+  --fighter-color: var(--yellow);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 10px;
+  min-width: 120px;
+  padding: 7px 9px;
+  background: rgba(10,12,30,.82);
+  border-left: 5px solid var(--fighter-color);
+  box-shadow: 3px 3px 0 rgba(0,0,0,.45);
+}
+.score-pill span { font-size: 7px; color: #858db2; }
+.score-pill strong { font-size: 9px; }
+.score-pill b { grid-row: 1 / 3; grid-column: 2; justify-self: end; align-self: center; font-size: 22px; color: var(--fighter-color); }
+.score-pill.is-player { outline: 1px solid var(--paper); }
+.timer { text-align: center; background: var(--paper); color: var(--ink); padding: 7px 14px; min-width: 88px; box-shadow: 4px 4px 0 var(--pink); }
+.timer span { display: block; font-size: 7px; }
+.timer strong { font-size: 20px; }
+.timer.is-danger { background: var(--pink); color: white; min-width: 122px; animation: danger .48s steps(2) infinite; }
+
+.modal-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 10;
+  background: rgba(7,9,23,.68);
+  backdrop-filter: blur(2px);
+}
+.arcade-modal { width: min(92%, 440px); padding: 34px; text-align: center; background: #151936; border: 3px solid var(--paper); box-shadow: 10px 10px 0 var(--pink); }
+.arcade-modal h2 { color: var(--yellow); font-size: clamp(34px, 6vw, 62px); line-height: .9; margin: 24px 0; text-shadow: 3px 3px var(--pink); }
+.text-button { border: 0; background: none; color: #9097bb; margin-top: 18px; font-size: 8px; cursor: pointer; }
+.text-button:hover { color: var(--paper); }
+.final-scores { display: flex; justify-content: center; gap: 16px; margin: 0 0 22px; font-size: 8px; }
+.final-scores span { color: #949abd; }
+.final-scores strong { color: var(--paper); font-size: 14px; }
+
+.crt { position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: .11; background: repeating-linear-gradient(0deg, transparent 0 3px, #000 3px 4px); mix-blend-mode: multiply; }
+.mobile-gate { display: none; }
+
+@keyframes danger { 50% { background: var(--yellow); color: var(--ink); } }
+
+@media (max-width: 900px), (pointer: coarse) {
+  body { overflow: auto; }
+  .game-shell > :not(.mobile-gate):not(.crt) { display: none; }
+  .game-shell { display: grid; place-items: center; padding: 28px; min-height: 100svh; }
+  .mobile-gate { display: block; max-width: 460px; text-align: center; }
+  .mobile-gate__kanji { display: inline-grid; place-items: center; width: 92px; height: 92px; background: var(--pink); color: var(--paper); font-size: 27px; box-shadow: 8px 8px 0 var(--yellow); }
+  .mobile-gate h1 { color: var(--yellow); font-size: clamp(34px, 11vw, 54px); line-height: .9; margin: 38px 0 22px; }
+  .mobile-gate p { color: #aab0cf; font-size: 10px; line-height: 1.8; }
+}
+
+@media (max-height: 720px) and (min-width: 901px) {
+  .game-shell { grid-template-rows: 40px 1fr; padding: 0 14px 14px; }
+  .menu-layer { padding: 28px 42px 22px; }
+  .title-lockup h1 { font-size: 70px; margin: 18px 0; }
+  .fighter-card { height: 59px; }
+  .controls-panel { gap: 10px; }
+}
