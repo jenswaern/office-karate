@@ -7,6 +7,7 @@ export const HIT_EFFECT_DURATION = 0.68;
 export const JUMP_VELOCITY = 5.1;
 export const JUMP_GRAVITY = 12.4;
 export const JUMP_DURATION = (JUMP_VELOCITY * 2) / JUMP_GRAVITY;
+export const MAX_LIVES = 3;
 
 export type HitRegion = "high" | "mid" | "low";
 export type KnockdownVariant = "back" | "dying" | "sweep";
@@ -44,6 +45,8 @@ export type FighterState = {
   velocityY: number;
   facing: -1 | 1;
   score: number;
+  lives: number;
+  knockedOut: boolean;
   action: FighterAction;
   actionTime: number;
   cooldown: number;
@@ -60,7 +63,7 @@ export type FighterState = {
 
 export type HitEffect = {
   id: number;
-  kind: "hit" | "blocked";
+  kind: "hit" | "blocked" | "ko";
   attackerId: string;
   targetId: string;
   x: number;
@@ -71,7 +74,6 @@ export type HitEffect = {
 export type GameState = {
   phase: "playing" | "paused" | "result";
   timeLeft: number;
-  suddenDeath: boolean;
   winnerId: string | null;
   fighters: FighterState[];
   hitEffects: HitEffect[];
@@ -102,7 +104,6 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
   return {
     phase: "playing",
     timeLeft: MATCH_SECONDS,
-    suddenDeath: false,
     winnerId: null,
     seed,
     hitEffects: [],
@@ -116,6 +117,8 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
       velocityY: 0,
       facing: index === 2 ? -1 : 1,
       score: 0,
+      lives: MAX_LIVES,
+      knockedOut: false,
       action: "idle",
       actionTime: 0,
       cooldown: index * 0.15,
@@ -151,11 +154,16 @@ export function tickGame(
     .map((effect) => ({ ...effect, age: effect.age + step }))
     .filter((effect) => effect.age < HIT_EFFECT_DURATION);
 
-  if (!next.suddenDeath) {
-    next.timeLeft = Math.max(0, next.timeLeft - step);
-  }
+  next.timeLeft = Math.max(0, next.timeLeft - step);
 
   for (const fighter of next.fighters) {
+    if (fighter.knockedOut) {
+      fighter.action = "knockdown";
+      fighter.actionTime = Math.min(fighter.actionTime + step, KNOCKDOWN_DURATION);
+      fighter.velocityY = 0;
+      fighter.knockbackVelocity = 0;
+      continue;
+    }
     fighter.cooldown = Math.max(0, fighter.cooldown - step);
     fighter.invulnerable = Math.max(0, fighter.invulnerable - step);
     fighter.actionTime += step;
@@ -168,12 +176,10 @@ export function tickGame(
   }
 
   resolveAttacks(next);
+  if (next.phase !== "playing") return next;
 
-  if (!next.suddenDeath && next.timeLeft <= 0) {
-    const highScore = Math.max(...next.fighters.map((fighter) => fighter.score));
-    const leaders = next.fighters.filter((fighter) => fighter.score === highScore);
-    if (leaders.length === 1) finishGame(next, leaders[0].id);
-    else next.suddenDeath = true;
+  if (next.timeLeft <= 0) {
+    finishGame(next, winnerAtTime(next.fighters));
   }
 
   return next;
@@ -250,13 +256,14 @@ function beginAction(fighter: FighterState, action: FighterAction, cooldown = 0)
 
 function resolveAttacks(state: GameState) {
   for (const attacker of state.fighters) {
+    if (attacker.knockedOut) continue;
     if (attacker.action !== "punch" && attacker.action !== "kick") continue;
     if (attacker.attackConnected) continue;
     const attack = ATTACKS[attacker.action];
     if (attacker.actionTime < attack.from || attacker.actionTime > attack.to) continue;
 
     const target = state.fighters
-      .filter((fighter) => fighter.id !== attacker.id && fighter.invulnerable <= 0)
+      .filter((fighter) => fighter.id !== attacker.id && !fighter.knockedOut && fighter.invulnerable <= 0)
       .filter((fighter) => Math.abs(fighter.x - attacker.x) <= attack.reach)
       .filter((fighter) => fighter.y < 1.15)
       .sort((a, b) => Math.abs(a.x - attacker.x) - Math.abs(b.x - attacker.x))[0];
@@ -285,6 +292,8 @@ function resolveAttacks(state: GameState) {
     const response = hitResponse(region);
 
     attacker.score += 1;
+    target.lives = Math.max(0, target.lives - 1);
+    target.knockedOut = target.lives === 0;
     target.invulnerable = KNOCKDOWN_DURATION - 0.1;
     target.velocityY = response.lift;
     target.knockbackVelocity = direction * response.knockback;
@@ -293,7 +302,7 @@ function resolveAttacks(state: GameState) {
     beginAction(target, "knockdown", 0.34);
     state.hitEffects.push({
       id: state.nextHitEffectId,
-      kind: "hit",
+      kind: target.knockedOut ? "ko" : "hit",
       attackerId: attacker.id,
       targetId: target.id,
       x: target.x - direction * 0.22,
@@ -302,14 +311,16 @@ function resolveAttacks(state: GameState) {
     });
     state.nextHitEffectId += 1;
 
-    if (state.suddenDeath) {
-      finishGame(state, attacker.id);
+    const active = state.fighters.filter((fighter) => !fighter.knockedOut);
+    if (active.length === 1) {
+      finishGame(state, active[0].id);
       return;
     }
   }
 }
 
 function updateFacing(fighter: FighterState, fighters: FighterState[]) {
+  if (fighter.knockedOut) return;
   if (fighter.action === "punch"
     || fighter.action === "kick"
     || fighter.action === "hit"
@@ -323,15 +334,16 @@ function updateFacing(fighter: FighterState, fighters: FighterState[]) {
 
 function updateAiAndGetInput(fighter: FighterState, state: GameState, dt: number): InputFrame {
   fighter.aiThink -= dt;
-  let target = state.fighters.find((candidate) => candidate.id === fighter.aiTargetId);
+  let target = state.fighters.find((candidate) => candidate.id === fighter.aiTargetId && !candidate.knockedOut);
 
   if (fighter.aiThink <= 0 || !target) {
     const targetingPlayer = state.fighters.some(
       (candidate) => candidate.id !== fighter.id
+        && !candidate.knockedOut
         && candidate.control === "ai"
         && candidate.aiTargetId === "player",
     );
-    const candidates = state.fighters.filter((candidate) => candidate.id !== fighter.id);
+    const candidates = state.fighters.filter((candidate) => candidate.id !== fighter.id && !candidate.knockedOut);
     target = candidates.sort((a, b) => {
       const scoreA = Math.abs(a.x - fighter.x) - a.score * 0.18
         + (a.id === "player" && targetingPlayer ? 1.4 : 0)
@@ -368,16 +380,27 @@ function updateAiAndGetInput(fighter: FighterState, state: GameState, dt: number
   }
 }
 
-function finishGame(state: GameState, winnerId: string) {
+function finishGame(state: GameState, winnerId: string | null) {
   state.phase = "result";
   state.winnerId = winnerId;
   for (const fighter of state.fighters) {
-    fighter.action = fighter.id === winnerId ? "victory" : "knockdown";
-    fighter.actionTime = 0;
-    if (fighter.id !== winnerId && !fighter.lastHitRegion) {
-      fighter.knockdownVariant = "back";
+    if (fighter.knockedOut) {
+      fighter.action = "knockdown";
+      continue;
     }
+    fighter.action = fighter.id === winnerId ? "victory" : "idle";
+    fighter.actionTime = 0;
   }
+}
+
+function winnerAtTime(fighters: FighterState[]) {
+  const active = fighters.filter((fighter) => !fighter.knockedOut);
+  const highScore = Math.max(...active.map((fighter) => fighter.score));
+  const scoreLeaders = active.filter((fighter) => fighter.score === highScore);
+  if (scoreLeaders.length === 1) return scoreLeaders[0].id;
+  const mostLives = Math.max(...scoreLeaders.map((fighter) => fighter.lives));
+  const lifeLeaders = scoreLeaders.filter((fighter) => fighter.lives === mostLives);
+  return lifeLeaders.length === 1 ? lifeLeaders[0].id : null;
 }
 
 function resolveHitRegion(attacker: FighterState, target: FighterState): HitRegion {
@@ -396,7 +419,7 @@ function hitResponse(region: HitRegion): { variant: KnockdownVariant; lift: numb
 
 function nearestOpponent(fighter: FighterState, fighters: FighterState[]) {
   return fighters
-    .filter((candidate) => candidate.id !== fighter.id)
+    .filter((candidate) => candidate.id !== fighter.id && !candidate.knockedOut)
     .sort((a, b) => Math.abs(a.x - fighter.x) - Math.abs(b.x - fighter.x))[0];
 }
 

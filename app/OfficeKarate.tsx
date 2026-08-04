@@ -16,6 +16,7 @@ import {
   JUMP_DURATION,
   JUMP_GRAVITY,
   JUMP_VELOCITY,
+  MAX_LIVES,
   createGame,
   setPaused,
   tickGame,
@@ -250,11 +251,11 @@ export default function OfficeKarate() {
           <div className="modal-layer">
             <div className="arcade-modal result-modal">
               <span className="eyebrow">MATCH COMPLETE</span>
-              <h2>{winnerCharacter?.name ?? "OAVGJORT"} WINS!</h2>
+              <h2>{winnerCharacter ? `${winnerCharacter.name} WINS!` : "OAVGJORT!"}</h2>
               <div className="final-scores">
                 {[...game.fighters].sort((a, b) => b.score - a.score).map((fighter) => {
                   const character = CHARACTERS.find((entry) => entry.id === fighter.characterId);
-                  return <span key={fighter.id}>{character?.name} <strong>{fighter.score}</strong></span>;
+                  return <span key={fighter.id}>{character?.name} <strong>{fighter.score}</strong> <small>{fighter.knockedOut ? "KO" : `${fighter.lives} LIFE`}</small></span>;
                 })}
               </div>
               <button type="button" className="start-button" onClick={startGame}><span>REMATCH</span><span>↻</span></button>
@@ -439,6 +440,8 @@ function makeHarnessFighter({
     velocityY: 0,
     facing: -1,
     score: 0,
+    lives: MAX_LIVES,
+    knockedOut: false,
     action,
     actionTime,
     cooldown: 0,
@@ -464,6 +467,8 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
     velocityY: 0,
     facing: -1,
     score: 0,
+    lives: MAX_LIVES,
+    knockedOut: false,
     action: "idle",
     actionTime: 0,
     cooldown: 0,
@@ -771,19 +776,25 @@ function Scoreboard({ game }: { game: GameState }) {
       <div className="scoreboard__players">
         {game.fighters.map((fighter) => {
           const character = CHARACTERS.find((entry) => entry.id === fighter.characterId);
-          const scoring = game.hitEffects.some((effect) => effect.kind === "hit" && effect.attackerId === fighter.id);
+          const scoring = game.hitEffects.some((effect) => effect.kind !== "blocked" && effect.attackerId === fighter.id);
           return (
-            <div key={fighter.id} className={`score-pill ${fighter.control === "player" ? "is-player" : ""} ${scoring ? "is-scoring" : ""}`} style={{ "--fighter-color": character?.color } as React.CSSProperties}>
+            <div key={fighter.id} className={`score-pill ${fighter.control === "player" ? "is-player" : ""} ${scoring ? "is-scoring" : ""} ${fighter.knockedOut ? "is-ko" : ""}`} style={{ "--fighter-color": character?.color } as React.CSSProperties}>
               <span>{fighter.control === "player" ? "1P" : "CPU"}</span>
               <strong>{character?.name}</strong>
               <b>{String(fighter.score).padStart(2, "0")}</b>
+              <div className="score-pill__lives" aria-label={`${fighter.lives} av ${MAX_LIVES} liv`}>
+                {Array.from({ length: MAX_LIVES }, (_, index) => (
+                  <i key={index} className={index < fighter.lives ? "is-full" : ""} />
+                ))}
+                {fighter.knockedOut && <em>KO</em>}
+              </div>
             </div>
           );
         })}
       </div>
-      <div className={`timer ${game.suddenDeath ? "is-danger" : ""}`}>
-        <span>{game.suddenDeath ? "SUDDEN" : "TIME"}</span>
-        <strong>{game.suddenDeath ? "DEATH" : Math.ceil(game.timeLeft).toString().padStart(2, "0")}</strong>
+      <div className="timer">
+        <span>TIME</span>
+        <strong>{Math.ceil(game.timeLeft).toString().padStart(2, "0")}</strong>
       </div>
     </div>
   );
@@ -796,18 +807,19 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
         const left = 8 + ((effect.x + 5.6) / 11.2) * 84;
         const top = effect.region === "high" ? 43 : effect.region === "mid" ? 51 : 60;
         const blocked = effect.kind === "blocked";
-        const label = blocked ? "NO POINT" : effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
+        const knockout = effect.kind === "ko";
+        const label = blocked ? "NO POINT" : knockout ? "OUT!" : effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
         return (
           <div
             key={effect.id}
-            className={`hit-feedback hit-feedback--${effect.region} ${blocked ? "hit-feedback--blocked" : ""}`}
+            className={`hit-feedback hit-feedback--${effect.region} ${blocked ? "hit-feedback--blocked" : ""} ${knockout ? "hit-feedback--ko" : ""}`}
             style={{
               "--hit-left": `${left}%`,
               "--hit-top": `${top}%`,
             } as React.CSSProperties}
           >
             <span className="hit-feedback__burst" />
-            <strong>{blocked ? "BLOCKED" : "+1"}</strong>
+            <strong>{blocked ? "BLOCKED" : knockout ? "KO!" : "+1"}</strong>
             <small>{label}</small>
           </div>
         );

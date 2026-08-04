@@ -34,6 +34,8 @@ describe("Office Karate simulation", () => {
     expect(afterHit.fighters[0].score).toBe(1);
     expect(afterHit.fighters[0].attackConnected).toBe(true);
     expect(afterHit.fighters[1].action).toBe("knockdown");
+    expect(afterHit.fighters[1].lives).toBe(2);
+    expect(afterHit.fighters[1].knockedOut).toBe(false);
     expect(afterHit.fighters[1].knockdownVariant).toBe("back");
     expect(afterHit.fighters[1].lastHitRegion).toBe("high");
     expect(afterHit.hitEffects).toMatchObject([
@@ -133,21 +135,78 @@ describe("Office Karate simulation", () => {
     expect(next.fighters[0].y).toBe(0);
   });
 
-  it("enters sudden death on a tied timer and ends on the next point", () => {
+  it("keeps a knocked-out fighter down and ends when only one fighter remains", () => {
     const game = inertGame();
-    game.timeLeft = 0.005;
-    const suddenDeath = tickGame(game, 1 / 60);
-    expect(suddenDeath.suddenDeath).toBe(true);
-    expect(suddenDeath.phase).toBe("playing");
+    const attacker = game.fighters[0];
+    const target = game.fighters[1];
+    const alreadyOut = game.fighters[2];
+    attacker.action = "punch";
+    attacker.actionTime = 0.195;
+    attacker.x = 0;
+    target.action = "idle";
+    target.x = 0.9;
+    target.lives = 1;
+    alreadyOut.lives = 0;
+    alreadyOut.knockedOut = true;
 
-    suddenDeath.fighters[0].action = "kick";
-    suddenDeath.fighters[0].actionTime = 0.335;
-    suddenDeath.fighters[0].x = 0;
-    suddenDeath.fighters[1].x = 1;
-    suddenDeath.fighters[1].invulnerable = 0;
-    const result = tickGame(suddenDeath, 1 / 60);
+    const result = tickGame(game, 1 / 60);
     expect(result.phase).toBe("result");
-    expect(result.winnerId).toBe("player");
+    expect(result.winnerId).toBe(attacker.id);
+    expect(result.fighters[1]).toMatchObject({ lives: 0, knockedOut: true, action: "knockdown" });
+    expect(result.fighters[2]).toMatchObject({ lives: 0, knockedOut: true, action: "knockdown" });
+    expect(result.hitEffects.at(-1)?.kind).toBe("ko");
+
+    const frozen = tickGame(result, 5, { punch: true });
+    expect(frozen).toBe(result);
+    expect(frozen.fighters[1].action).toBe("knockdown");
+  });
+
+  it("continues after the first KO while two fighters remain", () => {
+    const game = inertGame();
+    const attacker = game.fighters[0];
+    const target = game.fighters[1];
+    attacker.action = "kick";
+    attacker.actionTime = 0.335;
+    attacker.x = 0;
+    target.action = "idle";
+    target.x = 1;
+    target.lives = 1;
+
+    const next = tickGame(game, 1 / 60);
+    expect(next.phase).toBe("playing");
+    expect(next.fighters[1].knockedOut).toBe(true);
+    expect(next.fighters.filter((fighter) => !fighter.knockedOut)).toHaveLength(2);
+  });
+
+  it("ignores KO fighters when choosing an attack target", () => {
+    const game = inertGame();
+    const attacker = game.fighters[0];
+    const knockedOut = game.fighters[1];
+    const active = game.fighters[2];
+    attacker.action = "punch";
+    attacker.actionTime = 0.195;
+    attacker.x = 0;
+    knockedOut.x = 0.5;
+    knockedOut.lives = 0;
+    knockedOut.knockedOut = true;
+    active.x = 1;
+
+    const next = tickGame(game, 1 / 60);
+    expect(next.fighters[1].lives).toBe(0);
+    expect(next.fighters[2].lives).toBe(2);
+  });
+
+  it("ends when time runs out and uses remaining lives as the score tiebreaker", () => {
+    const game = inertGame();
+    game.fighters[0].score = 2;
+    game.fighters[0].lives = 1;
+    game.fighters[1].score = 2;
+    game.fighters[1].lives = 2;
+    game.timeLeft = 0.005;
+    const result = tickGame(game, 1 / 60);
+    expect(result.phase).toBe("result");
+    expect(result.timeLeft).toBe(0);
+    expect(result.winnerId).toBe("cpu-1");
   });
 
   it("freezes while paused", () => {
