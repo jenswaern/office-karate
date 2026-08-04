@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import { EffectComposer } from "@react-three/postprocessing";
 import { BlendFunction, Effect } from "postprocessing";
 import * as THREE from "three";
@@ -523,8 +523,14 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
 }
 
 function Arena() {
+  const officeBackground = useTexture("/assets/office-arena.png");
+
   return (
     <group>
+      <mesh position={[0, 1.91, -2.2]}>
+        <planeGeometry args={[15, 8.44]} />
+        <meshBasicMaterial map={officeBackground} toneMapped={false} />
+      </mesh>
       <mesh position={[0, -0.2, 0]} receiveShadow>
         <boxGeometry args={[13.5, 0.4, 4]} />
         <meshStandardMaterial color="#d8a557" roughness={0.82} />
@@ -535,34 +541,6 @@ function Arena() {
           <meshBasicMaterial color="#8e5e3f" />
         </mesh>
       ))}
-      <mesh position={[0, 2.65, -2.2]}>
-        <planeGeometry args={[15, 5.6]} />
-        <meshStandardMaterial color="#30265f" roughness={1} />
-      </mesh>
-      <mesh position={[0, 3.1, -2.1]}>
-        <circleGeometry args={[1.15, 32]} />
-        <meshBasicMaterial color="#ec467b" />
-      </mesh>
-      <mesh position={[0, 3.1, -2.04]}>
-        <ringGeometry args={[0.56, 0.68, 32]} />
-        <meshBasicMaterial color="#ffcf55" />
-      </mesh>
-      <mesh position={[-5.25, 1.3, -1.85]}>
-        <boxGeometry args={[0.18, 2.7, 0.18]} />
-        <meshStandardMaterial color="#161a39" />
-      </mesh>
-      <mesh position={[5.25, 1.3, -1.85]}>
-        <boxGeometry args={[0.18, 2.7, 0.18]} />
-        <meshStandardMaterial color="#161a39" />
-      </mesh>
-      <mesh position={[-5.25, 2.55, -1.75]}>
-        <boxGeometry args={[1.15, 0.12, 0.12]} />
-        <meshStandardMaterial color="#67d5d2" emissive="#0b5755" />
-      </mesh>
-      <mesh position={[5.25, 2.55, -1.75]}>
-        <boxGeometry args={[1.15, 0.12, 0.12]} />
-        <meshStandardMaterial color="#67d5d2" emissive="#0b5755" />
-      </mesh>
     </group>
   );
 }
