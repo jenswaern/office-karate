@@ -567,6 +567,10 @@ function Arena() {
         <boxGeometry args={[13.5, 0.4, 4]} />
         <meshStandardMaterial color="#8d9299" roughness={0.88} />
       </mesh>
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow renderOrder={2}>
+        <planeGeometry args={[13.5, 4]} />
+        <shadowMaterial color="#080914" opacity={0.52} transparent depthWrite={false} />
+      </mesh>
       {Array.from({ length: 13 }, (_, index) => (
         <mesh key={index} position={[-6 + index, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.035, 3.9]} />
