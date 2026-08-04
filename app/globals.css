@@ -264,7 +264,6 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   width: 0;
   height: 0;
   animation: hit-pop .68s steps(6, end) both;
-  filter: drop-shadow(4px 4px 0 rgba(8, 10, 28, .8));
 }
 .hit-feedback--mid { --hit-color: var(--cyan); }
 .hit-feedback--low { --hit-color: var(--pink); }
@@ -291,6 +290,7 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   justify-items: center;
   gap: 4px;
   transform: translateX(-50%);
+  filter: drop-shadow(4px 4px 0 rgba(8, 10, 28, .8));
 }
 .hit-feedback strong {
   position: static;
