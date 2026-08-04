@@ -684,8 +684,8 @@ function KnockoutStars({ model }: { model: THREE.Object3D }) {
   const starShape = useMemo(() => {
     const shape = new THREE.Shape();
     const points = [
-      [0, 0.2], [0.055, 0.055], [0.2, 0], [0.055, -0.055],
-      [0, -0.2], [-0.055, -0.055], [-0.2, 0], [-0.055, 0.055],
+      [0, 0.065], [0.018, 0.018], [0.065, 0], [0.018, -0.018],
+      [0, -0.065], [-0.018, -0.018], [-0.065, 0], [-0.018, 0.018],
     ] as const;
     shape.moveTo(points[0][0], points[0][1]);
     for (const [x, y] of points.slice(1)) shape.lineTo(x, y);
@@ -699,11 +699,11 @@ function KnockoutStars({ model }: { model: THREE.Object3D }) {
     if (head && group.current.parent) {
       head.getWorldPosition(worldPosition);
       group.current.parent.worldToLocal(worldPosition);
-      group.current.position.set(worldPosition.x, worldPosition.y + 0.48, 0.58);
+      group.current.position.set(worldPosition.x, worldPosition.y + 0.28, 0.58);
     }
     group.current.children.forEach((star, index) => {
       const angle = phase + (index * Math.PI * 2) / 3;
-      star.position.set(Math.cos(angle) * 0.42, Math.sin(angle) * 0.11, index * 0.015);
+      star.position.set(Math.cos(angle) * 0.18, Math.sin(angle) * 0.045, index * 0.015);
       star.rotation.z = -phase * 0.7 + index * 0.7;
       const pulse = 0.82 + Math.sin(phase * 2 + index) * 0.16;
       star.scale.setScalar(pulse);
@@ -712,10 +712,10 @@ function KnockoutStars({ model }: { model: THREE.Object3D }) {
 
   return (
     <group ref={group} renderOrder={20}>
-      {["#ffcf55", "#f7e9bf", "#ed467b"].map((color) => (
-        <mesh key={color}>
+      {Array.from({ length: 3 }, (_, index) => (
+        <mesh key={index}>
           <shapeGeometry args={[starShape]} />
-          <meshBasicMaterial color={color} depthTest={false} depthWrite={false} toneMapped={false} />
+          <meshBasicMaterial color="#ffffff" depthTest={false} depthWrite={false} toneMapped={false} />
         </mesh>
       ))}
     </group>
