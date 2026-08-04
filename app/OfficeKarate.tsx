@@ -414,9 +414,7 @@ function HarnessCanvas({
     <Canvas className="game-canvas" camera={{ position: [0, 2.8, 11], fov: 36, near: 0.1, far: 60 }} dpr={[1, 1.25]} gl={{ antialias: false, powerPreference: "high-performance" }} shadows>
       <color attach="background" args={["#10142d"]} />
       <fog attach="fog" args={["#11152c", 13, 25]} />
-      <ambientLight intensity={1.55} color="#8ea8ff" />
-      <directionalLight position={[-4, 8, 7]} intensity={3.2} color="#ffe8b6" castShadow shadow-mapSize={[1024, 1024]} />
-      <pointLight position={[5, 4, 3]} intensity={8} distance={10} color="#ee4e9b" />
+      <StageLighting />
       <Arena />
       <Suspense fallback={null}>
         <FighterModel fighter={fighter} animationTimeOverride={time} />
@@ -504,9 +502,7 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
     >
       <color attach="background" args={["#10142d"]} />
       <fog attach="fog" args={["#11152c", 13, 25]} />
-      <ambientLight intensity={1.55} color="#8ea8ff" />
-      <directionalLight position={[-4, 8, 7]} intensity={3.2} color="#ffe8b6" castShadow shadow-mapSize={[1024, 1024]} />
-      <pointLight position={[5, 4, 3]} intensity={8} distance={10} color="#ee4e9b" />
+      <StageLighting />
       <Arena />
       <Suspense fallback={null}>
         {fighters.map((fighter) => (
@@ -520,6 +516,40 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
   );
 }
 
+function StageLighting() {
+  const shadowLight = useRef<THREE.SpotLight>(null);
+  const shadowTarget = useRef<THREE.Object3D>(null);
+
+  useEffect(() => {
+    if (!shadowLight.current || !shadowTarget.current) return;
+    shadowLight.current.target = shadowTarget.current;
+    shadowTarget.current.updateMatrixWorld();
+  }, []);
+
+  return (
+    <>
+      <ambientLight intensity={1.55} color="#8ea8ff" />
+      <directionalLight position={[-4, 8, 7]} intensity={2.6} color="#ffe8b6" />
+      <spotLight
+        ref={shadowLight}
+        position={[-4.2, 1.05, 6.5]}
+        intensity={34}
+        distance={20}
+        angle={0.92}
+        penumbra={0.42}
+        decay={1.45}
+        color="#ffe0a8"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.025}
+      />
+      <object3D ref={shadowTarget} position={[0, 1.3, -2.2]} />
+      <pointLight position={[5, 4, 3]} intensity={8} distance={10} color="#ee4e9b" />
+    </>
+  );
+}
+
 function Arena() {
   const officeBackground = useTexture("/assets/office-arena.png");
 
@@ -528,6 +558,10 @@ function Arena() {
       <mesh position={[0, 1.91, -2.2]}>
         <planeGeometry args={[15, 8.44]} />
         <meshBasicMaterial map={officeBackground} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 1.91, -2.18]} receiveShadow renderOrder={1}>
+        <planeGeometry args={[15, 8.44]} />
+        <shadowMaterial color="#111326" opacity={0.48} transparent depthWrite={false} />
       </mesh>
       <mesh position={[0, -0.2, 0]} receiveShadow>
         <boxGeometry args={[13.5, 0.4, 4]} />
