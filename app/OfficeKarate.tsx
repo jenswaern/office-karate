@@ -193,8 +193,8 @@ export default function OfficeKarate() {
       <section className="stage" aria-label="Office Karate spelplan">
         <GameCanvas game={game} previewCharacter={selectedCharacter} />
 
-        {game && <HitFeedback effects={game.hitEffects} />}
-        {game && <Scoreboard game={game} />}
+        {game && game.phase !== "result" && <HitFeedback effects={game.hitEffects} />}
+        {game && game.phase !== "result" && <Scoreboard game={game} />}
 
         {!game && (
           <div className="menu-layer">
@@ -249,18 +249,10 @@ export default function OfficeKarate() {
         )}
 
         {game?.phase === "result" && (
-          <div className="modal-layer">
-            <div className="arcade-modal result-modal">
-              <span className="eyebrow">MATCH COMPLETE</span>
+          <div className="result-layer" role="status" aria-live="assertive">
+            <div className="result-banner">
               <h2>{winnerCharacter ? `${winnerCharacter.name} WINS!` : "OAVGJORT!"}</h2>
-              <div className="final-scores">
-                {[...game.fighters].sort((a, b) => b.score - a.score).map((fighter) => {
-                  const character = CHARACTERS.find((entry) => entry.id === fighter.characterId);
-                  return <span key={fighter.id}>{character?.name} <strong>{fighter.score}</strong> <small>{fighter.knockedOut ? "KO" : `${fighter.lives} LIFE`}</small></span>;
-                })}
-              </div>
-              <button type="button" className="start-button" onClick={startGame}><span>REMATCH</span><span>↻</span></button>
-              <button type="button" className="text-button" onClick={returnToMenu}>VÄLJ NY SPELARE</button>
+              <button type="button" className="result-continue" onClick={returnToMenu}>CONTINUE</button>
             </div>
           </div>
         )}
