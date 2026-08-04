@@ -533,12 +533,12 @@ function Arena() {
       </mesh>
       <mesh position={[0, -0.2, 0]} receiveShadow>
         <boxGeometry args={[13.5, 0.4, 4]} />
-        <meshStandardMaterial color="#d8a557" roughness={0.82} />
+        <meshStandardMaterial color="#8d9299" roughness={0.88} />
       </mesh>
       {Array.from({ length: 13 }, (_, index) => (
         <mesh key={index} position={[-6 + index, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.035, 3.9]} />
-          <meshBasicMaterial color="#8e5e3f" />
+          <meshBasicMaterial color="#4c5158" />
         </mesh>
       ))}
     </group>
