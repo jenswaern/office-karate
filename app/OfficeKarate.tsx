@@ -236,7 +236,7 @@ export default function OfficeKarate() {
                 ))}
               </div>
               <button className="start-button" type="button" onClick={startGame}>
-                <span>START MATCH</span><span>▶</span>
+                <span>START MATCH</span><span>&rarr;</span>
               </button>
               <p className="match-note">Två motståndare väljs slumpmässigt.</p>
             </div>
