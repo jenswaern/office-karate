@@ -191,6 +191,7 @@ button { font: inherit; }
   grid-column: 1 / -1;
   align-self: end;
   display: flex;
+  justify-content: center;
   gap: 15px;
   align-items: center;
   pointer-events: none;
