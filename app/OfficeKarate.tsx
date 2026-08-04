@@ -652,12 +652,6 @@ function FighterModel({
         <circleGeometry args={[0.62, 24]} />
         <meshBasicMaterial color={definition.color} transparent opacity={preview ? 0.7 : 0.42} />
       </mesh>
-      {fighter.action === "block" && (
-        <mesh position={[fighter.facing * 0.62, 1.05, 0.05]} rotation={[0, 0, Math.PI / 2]}>
-          <ringGeometry args={[0.28, 0.34, 12]} />
-          <meshBasicMaterial color="#fff06a" transparent opacity={0.86} />
-        </mesh>
-      )}
       <group ref={group}>
         <primitive
           object={model}
