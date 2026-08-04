@@ -121,7 +121,7 @@ button { font: inherit; }
   left: 50%;
   bottom: 14%;
   display: grid;
-  gap: 2px;
+  gap: 10px;
   width: min(36vw, 360px);
   transform: translateX(-50%);
   pointer-events: auto;
