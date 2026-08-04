@@ -273,7 +273,7 @@ const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }
   { value: "walk", label: "WALK / MEDIUM STEP FORWARD", duration: 2.5 },
   { value: "jump", label: "JUMP / JUMPING", duration: JUMP_DURATION },
   { value: "crouch", label: "CROUCH", duration: 2.5 },
-  { value: "punch", label: "PUNCH", duration: 0.58 },
+  { value: "punch", label: "PUNCH / JAB CROSS", duration: 0.58 },
   { value: "kick", label: "KICK", duration: 0.82 },
   { value: "block", label: "BLOCK / OUTWARD", duration: BLOCK_DURATION },
   { value: "knockdown", label: "KNOCKDOWN", duration: KNOCKDOWN_DURATION },
@@ -325,7 +325,7 @@ export function OfficeKarateHarness() {
             action={action}
             region={region}
             time={time}
-            knockedOut={showKoStars}
+            knockedOut={showKoStars && action === "knockdown"}
           />
           <div className="harness-stage__axis" aria-hidden="true" />
           <div className="harness-stage__readout">
