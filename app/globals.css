@@ -195,12 +195,14 @@ button { font: inherit; }
   align-items: center;
   pointer-events: none;
   color: #8f96bb;
+  font-family: "Press Start 2P", "Micro", "Courier New", monospace;
   font-size: 8px;
   z-index: 3;
 }
 .controls-panel__label { color: var(--cyan); margin-right: 5px; }
 .controls-panel div { display: flex; align-items: center; gap: 4px; }
 kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 5px; text-align: center; background: #171b38; box-shadow: 0 2px 0 #050716; }
+.controls-panel kbd { font-family: inherit; }
 
 .scoreboard {
   position: absolute;
