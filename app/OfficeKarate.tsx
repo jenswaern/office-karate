@@ -152,6 +152,12 @@ export default function OfficeKarate() {
     audio.select();
   };
 
+  const cycleCharacter = (direction: -1 | 1) => {
+    const currentIndex = CHARACTERS.findIndex((character) => character.id === selectedId);
+    const nextIndex = (currentIndex + direction + CHARACTERS.length) % CHARACTERS.length;
+    chooseCharacter(CHARACTERS[nextIndex].id);
+  };
+
   const startGame = useCallback(() => {
     const opponents = shuffle(CHARACTERS.filter((character) => character.id !== selectedId)).slice(0, 2);
     const nextGame = createGame([selectedId, ...opponents.map((character) => character.id)], selectedId, Date.now() >>> 0);
@@ -215,31 +221,19 @@ export default function OfficeKarate() {
               <p className="tagline">TRE KOLLEGOR. SEXTIO SEKUNDER.<br />NOLL VÄRDIGHET.</p>
             </div>
 
-            <div className="select-panel">
-              <div className="select-panel__heading">
-                <span>SELECT PLAYER</span>
-                <span>1P</span>
-              </div>
-              <div className="roster" role="list" aria-label="Välj karaktär">
-                {CHARACTERS.map((character, index) => (
-                  <button
-                    key={character.id}
-                    type="button"
-                    className={`fighter-card ${character.id === selectedId ? "is-selected" : ""}`}
-                    onClick={() => chooseCharacter(character.id)}
-                    style={{ "--fighter-color": character.color } as React.CSSProperties}
-                    aria-pressed={character.id === selectedId}
-                  >
-                    <span className="fighter-card__number">0{index + 1}</span>
-                    <span className="fighter-card__name">{character.name}</span>
-                  </button>
-                ))}
-              </div>
-              <button className="start-button" type="button" onClick={startGame}>
-                <span>START MATCH</span><span>&rarr;</span>
+            <div className="character-carousel" aria-label="Välj karaktär">
+              <button type="button" className="character-carousel__arrow character-carousel__arrow--previous" onClick={() => cycleCharacter(-1)} aria-label="Föregående karaktär">
+                &larr;
               </button>
-              <p className="match-note">Två motståndare väljs slumpmässigt.</p>
+              <span className="character-carousel__name" aria-live="polite">{selectedCharacter.name}</span>
+              <button type="button" className="character-carousel__arrow character-carousel__arrow--next" onClick={() => cycleCharacter(1)} aria-label="Nästa karaktär">
+                &rarr;
+              </button>
             </div>
+
+            <button className="start-button menu-start-button" type="button" onClick={startGame}>
+              <span>START MATCH</span><span>&rarr;</span>
+            </button>
 
             <Controls />
           </div>

@@ -20,7 +20,10 @@ test("server-renders the Office Karate shell", async () => {
   assert.match(html, /<title>Office Karate<\/title>/i);
   assert.match(html, /OFFICE/);
   assert.match(html, /KARATE/);
-  assert.match(html, /SELECT PLAYER/);
+  assert.match(html, /aria-label="Välj karaktär"/);
+  assert.match(html, /Föregående karaktär/);
+  assert.match(html, /Nästa karaktär/);
+  assert.doesNotMatch(html, /SELECT PLAYER/);
   assert.match(html, /START MATCH/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
