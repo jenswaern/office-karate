@@ -423,7 +423,7 @@ function HarnessCanvas({
       <pointLight position={[5, 4, 3]} intensity={8} distance={10} color="#ee4e9b" />
       <Arena />
       <Suspense fallback={null}>
-        <FighterModel fighter={fighter} preview={false} animationTimeOverride={time} />
+        <FighterModel fighter={fighter} animationTimeOverride={time} />
       </Suspense>
       <EffectComposer multisampling={0}><RetroEffect /></EffectComposer>
     </Canvas>
@@ -514,7 +514,7 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
       <Arena />
       <Suspense fallback={null}>
         {fighters.map((fighter) => (
-          <FighterModel key={`${fighter.id}-${fighter.characterId}`} fighter={fighter} preview={!game} />
+          <FighterModel key={`${fighter.id}-${fighter.characterId}`} fighter={fighter} />
         ))}
       </Suspense>
       <EffectComposer multisampling={0}>
@@ -549,11 +549,9 @@ function Arena() {
 
 function FighterModel({
   fighter,
-  preview,
   animationTimeOverride,
 }: {
   fighter: FighterState;
-  preview: boolean;
   animationTimeOverride?: number;
 }) {
   const definition = CHARACTERS.find((character) => character.id === fighter.characterId) ?? CHARACTERS[0];
@@ -640,10 +638,6 @@ function FighterModel({
   const facingRotation = fighter.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
   return (
     <group position={[fighter.x, fighter.y, 0]}>
-      <mesh position={[0, 0.018, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.62, 24]} />
-        <meshBasicMaterial color={definition.color} transparent opacity={preview ? 0.7 : 0.42} />
-      </mesh>
       <group ref={group}>
         <primitive
           object={model}
