@@ -870,16 +870,16 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
 }
 
 const SWEAT_PARTICLES = [
-  { velocityX: 10, velocityY: -154, color: "#ffffff" },
-  { velocityX: 23, velocityY: -188, color: "#d9ffff" },
-  { velocityX: 37, velocityY: -138, color: "#ffffff" },
-  { velocityX: 52, velocityY: -172, color: "#67d5d2" },
-  { velocityX: 67, velocityY: -116, color: "#ffffff" },
-  { velocityX: 82, velocityY: -148, color: "#d9ffff" },
-  { velocityX: -14, velocityY: -168, color: "#ffffff" },
-  { velocityX: -25, velocityY: -128, color: "#d9ffff" },
-  { velocityX: -37, velocityY: -102, color: "#ffffff" },
-  { velocityX: 46, velocityY: -96, color: "#ffffff" },
+  { velocityX: 140, velocityY: -154, color: "#ffffff" },
+  { velocityX: 175, velocityY: -188, color: "#d9ffff" },
+  { velocityX: 210, velocityY: -138, color: "#ffffff" },
+  { velocityX: 245, velocityY: -172, color: "#67d5d2" },
+  { velocityX: 280, velocityY: -116, color: "#ffffff" },
+  { velocityX: 320, velocityY: -148, color: "#d9ffff" },
+  { velocityX: 155, velocityY: -168, color: "#ffffff" },
+  { velocityX: 195, velocityY: -128, color: "#d9ffff" },
+  { velocityX: 255, velocityY: -102, color: "#ffffff" },
+  { velocityX: 360, velocityY: -96, color: "#ffffff" },
 ] as const;
 
 function HitParticles({ effect }: { effect: HitEffect }) {
@@ -888,7 +888,7 @@ function HitParticles({ effect }: { effect: HitEffect }) {
     <span className="hit-feedback__particles" aria-hidden="true">
       {SWEAT_PARTICLES.map((particle, index) => {
         const jitter = ((effect.id * 7 + index * 11) % 9) - 4;
-        const velocityX = particle.velocityX * direction + jitter * 2;
+        const velocityX = particle.velocityX * direction + jitter * 4;
         const velocityY = particle.velocityY + jitter * 3;
         const position = (progress: number) => {
           const time = HIT_PARTICLE_DURATION * progress;
