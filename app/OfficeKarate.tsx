@@ -223,16 +223,16 @@ export default function OfficeKarate() {
 
             <div className="character-carousel" aria-label="Välj karaktär">
               <button type="button" className="character-carousel__arrow character-carousel__arrow--previous" onClick={() => cycleCharacter(-1)} aria-label="Föregående karaktär">
-                &larr;
+                &lt;
               </button>
               <span className="character-carousel__name" aria-live="polite">{selectedCharacter.name}</span>
               <button type="button" className="character-carousel__arrow character-carousel__arrow--next" onClick={() => cycleCharacter(1)} aria-label="Nästa karaktär">
-                &rarr;
+                &gt;
               </button>
             </div>
 
             <button className="start-button menu-start-button" type="button" onClick={startGame}>
-              <span>START MATCH</span><span>&rarr;</span>
+              <span>START MATCH</span><span>&gt;</span>
             </button>
 
             <Controls />
