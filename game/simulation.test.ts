@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARENA_LIMIT, createGame, setPaused, tickGame } from "./simulation";
+import { ARENA_LIMIT, HIT_EFFECT_DURATION, createGame, setPaused, tickGame } from "./simulation";
 
 function inertGame() {
   const game = createGame(["jens", "fia", "peter"], "jens", 42);
@@ -33,9 +33,53 @@ describe("Office Karate simulation", () => {
     const afterHit = tickGame(game, 1 / 60);
     expect(afterHit.fighters[0].score).toBe(1);
     expect(afterHit.fighters[0].attackConnected).toBe(true);
+    expect(afterHit.fighters[1].action).toBe("knockdown");
+    expect(afterHit.fighters[1].knockdownVariant).toBe("back");
+    expect(afterHit.fighters[1].lastHitRegion).toBe("high");
+    expect(afterHit.hitEffects).toMatchObject([
+      { attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
+    ]);
 
     const afterSecondTick = tickGame(afterHit, 1 / 60);
     expect(afterSecondTick.fighters[0].score).toBe(1);
+  });
+
+  it("uses different falls for body and low hits", () => {
+    const bodyGame = inertGame();
+    bodyGame.fighters[0].action = "kick";
+    bodyGame.fighters[0].actionTime = 0.335;
+    bodyGame.fighters[0].x = 0;
+    bodyGame.fighters[1].x = 1;
+    const bodyHit = tickGame(bodyGame, 1 / 60);
+    expect(bodyHit.fighters[1].lastHitRegion).toBe("mid");
+    expect(bodyHit.fighters[1].knockdownVariant).toBe("spin");
+
+    const lowGame = inertGame();
+    lowGame.fighters[0].action = "kick";
+    lowGame.fighters[0].actionTime = 0.335;
+    lowGame.fighters[0].x = 0;
+    lowGame.fighters[1].action = "crouch";
+    lowGame.fighters[1].x = 1;
+    const lowHit = tickGame(lowGame, 1 / 60, { crouch: true });
+    expect(lowHit.fighters[1].lastHitRegion).toBe("low");
+    expect(lowHit.fighters[1].knockdownVariant).toBe("sweep");
+  });
+
+  it("expires hit feedback and keeps a fallen fighter action-locked", () => {
+    const game = inertGame();
+    const target = game.fighters[1];
+    target.action = "knockdown";
+    target.actionTime = 0.1;
+    game.hitEffects.push({ id: 1, attackerId: "player", targetId: target.id, x: 0, region: "mid", age: 0 });
+
+    const locked = tickGame(game, 1 / 60, { punch: true, right: true });
+    expect(locked.fighters[1].action).toBe("knockdown");
+
+    let expired = locked;
+    for (let elapsed = 0; elapsed < HIT_EFFECT_DURATION + 0.1; elapsed += 1 / 60) {
+      expired = tickGame(expired, 1 / 60);
+    }
+    expect(expired.hitEffects).toHaveLength(0);
   });
 
   it("does not score through a correctly faced block", () => {

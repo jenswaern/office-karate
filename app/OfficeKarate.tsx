@@ -10,12 +10,15 @@ import { SkeletonUtils } from "three-stdlib";
 import { ACTION_ANIMATION, ANIMATIONS, CHARACTERS, type CharacterDefinition } from "../game/config";
 import {
   FIXED_STEP,
+  KNOCKDOWN_DURATION,
   createGame,
   setPaused,
   tickGame,
   type FighterAction,
   type FighterState,
   type GameState,
+  type HitEffect,
+  type HitRegion,
   type InputFrame,
 } from "../game/simulation";
 
@@ -109,12 +112,14 @@ export default function OfficeKarate() {
     return () => cancelAnimationFrame(frame);
   }, [gamePhase]);
 
-  const scoreTotal = game?.fighters.reduce((sum, fighter) => sum + fighter.score, 0) ?? 0;
-  const previousScore = useRef(0);
+  const newestHit = game?.hitEffects.at(-1);
+  const newestHitId = newestHit?.id ?? 0;
+  const newestHitRegion = newestHit?.region;
+  const previousHitId = useRef(0);
   useEffect(() => {
-    if (scoreTotal > previousScore.current) audio.hit();
-    previousScore.current = scoreTotal;
-  }, [audio, scoreTotal]);
+    if (newestHitRegion && newestHitId > previousHitId.current) audio.hit(newestHitRegion);
+    previousHitId.current = newestHitId;
+  }, [audio, newestHitId, newestHitRegion]);
 
   const chooseCharacter = (id: string) => {
     setSelectedId(id);
@@ -125,7 +130,7 @@ export default function OfficeKarate() {
   const startGame = useCallback(() => {
     const opponents = shuffle(CHARACTERS.filter((character) => character.id !== selectedId)).slice(0, 2);
     const nextGame = createGame([selectedId, ...opponents.map((character) => character.id)], selectedId, Date.now() >>> 0);
-    previousScore.current = 0;
+    previousHitId.current = 0;
     gameRef.current = nextGame;
     setGame(nextGame);
     audio.start();
@@ -171,6 +176,7 @@ export default function OfficeKarate() {
       <section className="stage" aria-label="Office Karate spelplan">
         <GameCanvas game={game} previewCharacter={selectedCharacter} />
 
+        {game && <HitFeedback effects={game.hitEffects} />}
         {game && <Scoreboard game={game} />}
 
         {!game && (
@@ -261,6 +267,9 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
     cooldown: 0,
     invulnerable: 0,
     attackConnected: false,
+    knockbackVelocity: 0,
+    knockdownVariant: "back",
+    lastHitRegion: null,
     aiThink: 0,
     aiTargetId: null,
     aiIntent: "approach",
@@ -402,9 +411,11 @@ function FighterModel({ fighter, preview }: { fighter: FighterState; preview: bo
     mixer.update(Math.min(delta, 0.05));
     if (!group.current) return;
     const pulse = Math.sin(performance.now() * 0.025);
-    group.current.rotation.z = fighter.action === "hit" ? pulse * 0.045 : 0;
-    group.current.position.y = fighter.action === "crouch" ? -0.34 : 0;
-    group.current.scale.y = fighter.action === "crouch" ? 0.86 : 1;
+    const knockdown = getKnockdownPose(fighter);
+    group.current.rotation.set(knockdown.rotationX, knockdown.rotationY, knockdown.rotationZ);
+    group.current.rotation.z += fighter.action === "hit" ? pulse * 0.045 : 0;
+    group.current.position.set(knockdown.offsetX, fighter.action === "crouch" ? -0.34 : knockdown.offsetY, knockdown.offsetZ);
+    group.current.scale.set(1, fighter.action === "crouch" ? 0.86 : 1, 1);
   });
 
   const facingRotation = fighter.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -430,6 +441,26 @@ function FighterModel({ fighter, preview }: { fighter: FighterState; preview: bo
       </group>
     </group>
   );
+}
+
+function getKnockdownPose(fighter: FighterState) {
+  const empty = { rotationX: 0, rotationY: 0, rotationZ: 0, offsetX: 0, offsetY: 0, offsetZ: 0 };
+  if (fighter.action !== "knockdown") return empty;
+  const fall = easeOutCubic(Math.min(fighter.actionTime / 0.42, 1));
+  const settle = Math.sin(Math.min(fighter.actionTime / KNOCKDOWN_DURATION, 1) * Math.PI) * 0.08;
+
+  switch (fighter.knockdownVariant) {
+    case "back":
+      return { ...empty, rotationZ: -fighter.facing * 1.18 * fall, offsetX: -fighter.facing * 0.2 * fall, offsetY: 0.14 * fall + settle };
+    case "spin":
+      return { ...empty, rotationY: fighter.facing * 2.45 * fall, rotationZ: -fighter.facing * 0.88 * fall, offsetZ: 0.26 * fall, offsetY: 0.2 * fall + settle };
+    case "sweep":
+      return { ...empty, rotationX: fighter.facing * 0.2 * fall, rotationZ: fighter.facing * 1.48 * fall, offsetX: fighter.facing * 0.16 * fall, offsetY: -0.08 * fall + settle };
+  }
+}
+
+function easeOutCubic(value: number) {
+  return 1 - Math.pow(1 - value, 3);
 }
 
 function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D) {
@@ -465,7 +496,13 @@ function playAnimation(
   const previous = current.current ? actions.get(current.current) : undefined;
   previous?.fadeOut(0.1);
   next.reset().fadeIn(0.1).play();
-  const targetDuration = fighterAction === "punch" ? 0.58 : fighterAction === "kick" ? 0.82 : null;
+  const targetDuration = fighterAction === "punch"
+    ? 0.58
+    : fighterAction === "kick"
+      ? 0.82
+      : fighterAction === "knockdown"
+        ? KNOCKDOWN_DURATION
+        : null;
   next.timeScale = targetDuration ? next.getClip().duration / targetDuration : 1;
   current.current = animationId;
 }
@@ -476,8 +513,9 @@ function Scoreboard({ game }: { game: GameState }) {
       <div className="scoreboard__players">
         {game.fighters.map((fighter) => {
           const character = CHARACTERS.find((entry) => entry.id === fighter.characterId);
+          const scoring = game.hitEffects.some((effect) => effect.attackerId === fighter.id);
           return (
-            <div key={fighter.id} className={`score-pill ${fighter.control === "player" ? "is-player" : ""}`} style={{ "--fighter-color": character?.color } as React.CSSProperties}>
+            <div key={fighter.id} className={`score-pill ${fighter.control === "player" ? "is-player" : ""} ${scoring ? "is-scoring" : ""}`} style={{ "--fighter-color": character?.color } as React.CSSProperties}>
               <span>{fighter.control === "player" ? "1P" : "CPU"}</span>
               <strong>{character?.name}</strong>
               <b>{String(fighter.score).padStart(2, "0")}</b>
@@ -489,6 +527,32 @@ function Scoreboard({ game }: { game: GameState }) {
         <span>{game.suddenDeath ? "SUDDEN" : "TIME"}</span>
         <strong>{game.suddenDeath ? "DEATH" : Math.ceil(game.timeLeft).toString().padStart(2, "0")}</strong>
       </div>
+    </div>
+  );
+}
+
+function HitFeedback({ effects }: { effects: HitEffect[] }) {
+  return (
+    <div className="hit-feedback-layer" aria-live="polite">
+      {effects.map((effect) => {
+        const left = 8 + ((effect.x + 5.6) / 11.2) * 84;
+        const top = effect.region === "high" ? 43 : effect.region === "mid" ? 51 : 60;
+        const label = effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
+        return (
+          <div
+            key={effect.id}
+            className={`hit-feedback hit-feedback--${effect.region}`}
+            style={{
+              "--hit-left": `${left}%`,
+              "--hit-top": `${top}%`,
+            } as React.CSSProperties}
+          >
+            <span className="hit-feedback__burst" />
+            <strong>+1</strong>
+            <small>{label}</small>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -630,9 +694,11 @@ function useArcadeAudio(muted: boolean) {
   return useMemo(() => ({
     start,
     select: () => tone(440, 0.055, "square", 0.2),
-    hit: () => {
-      tone(92, 0.14, "sawtooth", 0.42);
-      window.setTimeout(() => tone(58, 0.12, "square", 0.3), 35);
+    hit: (region: HitRegion) => {
+      const first = region === "high" ? 126 : region === "mid" ? 92 : 68;
+      const second = region === "high" ? 74 : region === "mid" ? 58 : 44;
+      tone(first, 0.14, "sawtooth", 0.42);
+      window.setTimeout(() => tone(second, 0.13, "square", 0.3), 35);
     },
   }), [start, tone]);
 }

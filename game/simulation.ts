@@ -1,6 +1,11 @@
 export const MATCH_SECONDS = 60;
 export const ARENA_LIMIT = 5.6;
 export const FIXED_STEP = 1 / 60;
+export const KNOCKDOWN_DURATION = 1.55;
+export const HIT_EFFECT_DURATION = 0.68;
+
+export type HitRegion = "high" | "mid" | "low";
+export type KnockdownVariant = "back" | "spin" | "sweep";
 
 export type FighterAction =
   | "idle"
@@ -40,9 +45,21 @@ export type FighterState = {
   cooldown: number;
   invulnerable: number;
   attackConnected: boolean;
+  knockbackVelocity: number;
+  knockdownVariant: KnockdownVariant;
+  lastHitRegion: HitRegion | null;
   aiThink: number;
   aiTargetId: string | null;
   aiIntent: AiIntent;
+};
+
+export type HitEffect = {
+  id: number;
+  attackerId: string;
+  targetId: string;
+  x: number;
+  region: HitRegion;
+  age: number;
 };
 
 export type GameState = {
@@ -51,6 +68,8 @@ export type GameState = {
   suddenDeath: boolean;
   winnerId: string | null;
   fighters: FighterState[];
+  hitEffects: HitEffect[];
+  nextHitEffectId: number;
   seed: number;
 };
 
@@ -58,7 +77,7 @@ const ACTION_DURATION: Partial<Record<FighterAction, number>> = {
   punch: 0.58,
   kick: 0.82,
   hit: 0.42,
-  knockdown: 1.05,
+  knockdown: KNOCKDOWN_DURATION,
 };
 
 const ATTACKS = {
@@ -79,6 +98,8 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
     suddenDeath: false,
     winnerId: null,
     seed,
+    hitEffects: [],
+    nextHitEffectId: 1,
     fighters: ordered.map((characterId, index) => ({
       id: index === 0 ? "player" : `cpu-${index}`,
       characterId,
@@ -93,6 +114,9 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
       cooldown: index * 0.15,
       invulnerable: 0,
       attackConnected: false,
+      knockbackVelocity: 0,
+      knockdownVariant: "back",
+      lastHitRegion: null,
       aiThink: 0.15 + index * 0.12,
       aiTargetId: index === 1 ? "cpu-2" : "cpu-1",
       aiIntent: "approach",
@@ -114,6 +138,10 @@ export function tickGame(
 
   const next = structuredClone(state);
   const step = Math.min(dt, 0.05);
+
+  next.hitEffects = next.hitEffects
+    .map((effect) => ({ ...effect, age: effect.age + step }))
+    .filter((effect) => effect.age < HIT_EFFECT_DURATION);
 
   if (!next.suddenDeath) {
     next.timeLeft = Math.max(0, next.timeLeft - step);
@@ -161,6 +189,13 @@ function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
     || fighter.action === "hit"
     || fighter.action === "knockdown"
     || fighter.action === "victory";
+
+  if (Math.abs(fighter.knockbackVelocity) > 0.01) {
+    fighter.x += fighter.knockbackVelocity * dt;
+    fighter.knockbackVelocity *= Math.pow(0.055, dt);
+  } else {
+    fighter.knockbackVelocity = 0;
+  }
 
   if (!locked) {
     if (input.punch && fighter.cooldown <= 0) beginAction(fighter, "punch", 0.12);
@@ -224,10 +259,26 @@ function resolveAttacks(state: GameState) {
       continue;
     }
 
+    const region = resolveHitRegion(attacker, target);
+    const direction = target.x >= attacker.x ? 1 : -1;
+    const response = hitResponse(region);
+
     attacker.score += 1;
-    target.invulnerable = 0.72;
-    target.velocityY = attacker.action === "kick" ? 2.2 : 0.8;
-    beginAction(target, attacker.action === "kick" ? "knockdown" : "hit", 0.3);
+    target.invulnerable = KNOCKDOWN_DURATION - 0.1;
+    target.velocityY = response.lift;
+    target.knockbackVelocity = direction * response.knockback;
+    target.knockdownVariant = response.variant;
+    target.lastHitRegion = region;
+    beginAction(target, "knockdown", 0.34);
+    state.hitEffects.push({
+      id: state.nextHitEffectId,
+      attackerId: attacker.id,
+      targetId: target.id,
+      x: target.x - direction * 0.22,
+      region,
+      age: 0,
+    });
+    state.nextHitEffectId += 1;
 
     if (state.suddenDeath) {
       finishGame(state, attacker.id);
@@ -237,7 +288,11 @@ function resolveAttacks(state: GameState) {
 }
 
 function updateFacing(fighter: FighterState, fighters: FighterState[]) {
-  if (fighter.action === "punch" || fighter.action === "kick") return;
+  if (fighter.action === "punch"
+    || fighter.action === "kick"
+    || fighter.action === "hit"
+    || fighter.action === "knockdown"
+    || fighter.action === "victory") return;
   const target = nearestOpponent(fighter, fighters);
   if (target && Math.abs(target.x - fighter.x) > 0.08) {
     fighter.facing = target.x > fighter.x ? 1 : -1;
@@ -257,9 +312,11 @@ function updateAiAndGetInput(fighter: FighterState, state: GameState, dt: number
     const candidates = state.fighters.filter((candidate) => candidate.id !== fighter.id);
     target = candidates.sort((a, b) => {
       const scoreA = Math.abs(a.x - fighter.x) - a.score * 0.18
-        + (a.id === "player" && targetingPlayer ? 1.4 : 0);
+        + (a.id === "player" && targetingPlayer ? 1.4 : 0)
+        + (a.action === "knockdown" ? 4 : 0);
       const scoreB = Math.abs(b.x - fighter.x) - b.score * 0.18
-        + (b.id === "player" && targetingPlayer ? 1.4 : 0);
+        + (b.id === "player" && targetingPlayer ? 1.4 : 0)
+        + (b.action === "knockdown" ? 4 : 0);
       return scoreA - scoreB;
     })[0];
     fighter.aiTargetId = target.id;
@@ -309,6 +366,23 @@ function finishGame(state: GameState, winnerId: string) {
   for (const fighter of state.fighters) {
     fighter.action = fighter.id === winnerId ? "victory" : "knockdown";
     fighter.actionTime = 0;
+    if (fighter.id !== winnerId && !fighter.lastHitRegion) {
+      fighter.knockdownVariant = "back";
+    }
+  }
+}
+
+function resolveHitRegion(attacker: FighterState, target: FighterState): HitRegion {
+  if (target.action === "crouch") return attacker.action === "kick" ? "low" : "mid";
+  if (target.y > 0.45) return attacker.action === "kick" ? "low" : "mid";
+  return attacker.action === "punch" ? "high" : "mid";
+}
+
+function hitResponse(region: HitRegion): { variant: KnockdownVariant; lift: number; knockback: number } {
+  switch (region) {
+    case "high": return { variant: "back", lift: 1.15, knockback: 2.25 };
+    case "mid": return { variant: "spin", lift: 1.75, knockback: 1.65 };
+    case "low": return { variant: "sweep", lift: 0.42, knockback: 2.8 };
   }
 }
 
