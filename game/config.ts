@@ -27,7 +27,7 @@ export const CHARACTERS: CharacterDefinition[] = [
 
 export const ANIMATIONS: AnimationDefinition[] = [
   { id: "fightingIdle", url: "/assets/animations/fighting-idle.json", loop: true, blendTime: 0.18 },
-  { id: "walk", url: "/assets/animations/walk.json", loop: true, blendTime: 0.14 },
+  { id: "walk", url: "/assets/animations/medium-step-forward.json", loop: true, blendTime: 0.12 },
   { id: "jumping", url: "/assets/animations/jumping.json", loop: false, blendTime: 0.08 },
   { id: "punch", url: "/assets/animations/punch.json", loop: false, blendTime: 0.08, hitFrame: 0.26 },
   { id: "kick", url: "/assets/animations/kick.json", loop: false, blendTime: 0.08, hitFrame: 0.42 },

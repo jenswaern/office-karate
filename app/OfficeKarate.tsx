@@ -270,7 +270,7 @@ export default function OfficeKarate() {
 
 const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }[] = [
   { value: "idle", label: "FIGHTING IDLE", duration: 2.5 },
-  { value: "walk", label: "WALK", duration: 2.5 },
+  { value: "walk", label: "WALK / MEDIUM STEP FORWARD", duration: 2.5 },
   { value: "jump", label: "JUMP / JUMPING", duration: JUMP_DURATION },
   { value: "crouch", label: "CROUCH", duration: 2.5 },
   { value: "punch", label: "PUNCH", duration: 0.58 },
@@ -697,6 +697,7 @@ function createClipSamplers(clip: THREE.AnimationClip, model: THREE.Object3D): C
 }
 
 function sampleClipAtTime(clip: THREE.AnimationClip, samplers: ClipSampler[], action: FighterAction, actionTime: number) {
+  const looping = action === "idle" || action === "walk" || action === "victory";
   const targetDuration = action === "punch"
     ? 0.58
     : action === "kick"
@@ -708,7 +709,9 @@ function sampleClipAtTime(clip: THREE.AnimationClip, samplers: ClipSampler[], ac
           : action === "jump"
             ? JUMP_DURATION
         : clip.duration;
-  const clipTime = Math.min(clip.duration, (actionTime / targetDuration) * clip.duration);
+  const clipTime = looping
+    ? actionTime % clip.duration
+    : Math.min(clip.duration, (actionTime / targetDuration) * clip.duration);
   for (const sampler of samplers) {
     const value = sampler.interpolant.evaluate(clipTime);
     if (sampler.property === "position") sampler.target.position.fromArray(value);
