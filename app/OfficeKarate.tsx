@@ -30,6 +30,7 @@ import {
 } from "../game/simulation";
 
 const EMPTY_INPUT: InputFrame = {};
+const RESULT_REVEAL_DELAY_MS = 1600;
 const clipCache = new Map<string, Promise<THREE.AnimationClip>>();
 
 type ClipSampler = {
@@ -59,6 +60,7 @@ if (typeof window !== "undefined") {
 export default function OfficeKarate() {
   const [selectedId, setSelectedId] = useState(CHARACTERS[0].id);
   const [game, setGame] = useState<GameState | null>(null);
+  const [resultVisible, setResultVisible] = useState(false);
   const [muted, setMuted] = useState(false);
   const keys = useRef(new Set<string>());
   const gameRef = useRef<GameState | null>(null);
@@ -101,6 +103,12 @@ export default function OfficeKarate() {
   }, []);
 
   const gamePhase = game?.phase;
+  useEffect(() => {
+    if (gamePhase !== "result") return;
+    const timeout = window.setTimeout(() => setResultVisible(true), RESULT_REVEAL_DELAY_MS);
+    return () => window.clearTimeout(timeout);
+  }, [gamePhase]);
+
   useEffect(() => {
     if (gamePhase !== "playing") return;
     let frame = 0;
@@ -148,6 +156,7 @@ export default function OfficeKarate() {
     const opponents = shuffle(CHARACTERS.filter((character) => character.id !== selectedId)).slice(0, 2);
     const nextGame = createGame([selectedId, ...opponents.map((character) => character.id)], selectedId, Date.now() >>> 0);
     previousHitId.current = 0;
+    setResultVisible(false);
     gameRef.current = nextGame;
     setGame(nextGame);
     audio.start();
@@ -155,6 +164,7 @@ export default function OfficeKarate() {
   }, [audio, selectedId]);
 
   const returnToMenu = () => {
+    setResultVisible(false);
     setGame(null);
     gameRef.current = null;
     keys.current.clear();
@@ -248,7 +258,7 @@ export default function OfficeKarate() {
           </div>
         )}
 
-        {game?.phase === "result" && (
+        {game?.phase === "result" && resultVisible && (
           <div className="result-layer" role="status" aria-live="assertive">
             <div className="result-banner">
               <h2>{winnerCharacter ? `${winnerCharacter.name} WINS!` : "OAVGJORT!"}</h2>

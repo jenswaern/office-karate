@@ -334,6 +334,7 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   display: grid;
   justify-items: center;
   text-align: center;
+  animation: result-reveal .32s steps(4, end) both;
 }
 .result-banner h2 {
   margin: 0;
@@ -466,6 +467,10 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   0% { opacity: 0; }
   8%, 72% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes result-reveal {
+  0% { opacity: 0; transform: scale(.72); }
+  100% { opacity: 1; transform: scale(1); }
 }
 @keyframes sweat-particle {
   0% { opacity: 0; transform: translate(0, 0); }
