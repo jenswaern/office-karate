@@ -116,17 +116,22 @@ button { font: inherit; }
 }
 .tagline { color: #c1c5df; font-size: 10px; letter-spacing: .08em; line-height: 1.65; }
 
-.character-carousel {
+.menu-actions {
   position: absolute;
   left: 50%;
-  bottom: 30%;
+  bottom: 14%;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 48px;
-  gap: 8px;
+  gap: 2px;
   width: min(36vw, 360px);
   transform: translateX(-50%);
   pointer-events: auto;
   z-index: 4;
+}
+.character-carousel {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  gap: 8px;
+  width: 100%;
 }
 .character-carousel__arrow {
   display: grid;
@@ -174,19 +179,13 @@ button { font: inherit; }
 }
 .start-button:hover, .start-button:focus-visible { background: var(--paper); transform: translateY(-1px); }
 .menu-start-button {
-  position: absolute;
-  left: 50%;
-  bottom: 20%;
   justify-content: center;
   gap: 18px;
-  width: min(36vw, 360px);
+  width: 100%;
   margin: 0;
-  pointer-events: auto;
-  transform: translateX(-50%);
-  z-index: 4;
 }
 .menu-start-button:hover,
-.menu-start-button:focus-visible { transform: translate(-50%, -1px); }
+.menu-start-button:focus-visible { transform: translateY(-1px); }
 
 .controls-panel {
   grid-column: 1 / -1;
