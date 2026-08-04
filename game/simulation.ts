@@ -4,6 +4,9 @@ export const FIXED_STEP = 1 / 60;
 export const KNOCKDOWN_DURATION = 2;
 export const BLOCK_DURATION = 1;
 export const HIT_EFFECT_DURATION = 0.68;
+export const JUMP_VELOCITY = 5.1;
+export const JUMP_GRAVITY = 12.4;
+export const JUMP_DURATION = (JUMP_VELOCITY * 2) / JUMP_GRAVITY;
 
 export type HitRegion = "high" | "mid" | "low";
 export type KnockdownVariant = "back" | "dying" | "sweep";
@@ -209,7 +212,7 @@ function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
     if (input.punch && fighter.cooldown <= 0) beginAction(fighter, "punch", 0.12);
     else if (input.kick && fighter.cooldown <= 0) beginAction(fighter, "kick", 0.18);
     else if (input.jump && fighter.y <= 0.001) {
-      fighter.velocityY = 5.1;
+      fighter.velocityY = JUMP_VELOCITY;
       beginAction(fighter, "jump", 0.08);
     } else if (blockPressed) beginAction(fighter, "block");
     else if (input.crouch && fighter.y <= 0.001) beginAction(fighter, "crouch");
@@ -224,7 +227,7 @@ function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
   }
 
   if (fighter.y > 0 || fighter.velocityY > 0) {
-    fighter.velocityY -= 12.4 * dt;
+    fighter.velocityY -= JUMP_GRAVITY * dt;
     fighter.y += fighter.velocityY * dt;
     if (fighter.y <= 0) {
       fighter.y = 0;

@@ -13,6 +13,9 @@ import {
   FIXED_STEP,
   BLOCK_DURATION,
   KNOCKDOWN_DURATION,
+  JUMP_DURATION,
+  JUMP_GRAVITY,
+  JUMP_VELOCITY,
   createGame,
   setPaused,
   tickGame,
@@ -267,6 +270,7 @@ export default function OfficeKarate() {
 const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }[] = [
   { value: "idle", label: "FIGHTING IDLE", duration: 2.5 },
   { value: "walk", label: "WALK", duration: 2.5 },
+  { value: "jump", label: "JUMP / JUMPING", duration: JUMP_DURATION },
   { value: "crouch", label: "CROUCH", duration: 2.5 },
   { value: "punch", label: "PUNCH", duration: 0.58 },
   { value: "kick", label: "KICK", duration: 0.82 },
@@ -390,6 +394,10 @@ function HarnessCanvas({
     region,
     variant,
   });
+  if (action === "jump") {
+    const jumpTime = Math.min(time, JUMP_DURATION);
+    fighter.y = Math.max(0, JUMP_VELOCITY * jumpTime - (JUMP_GRAVITY * jumpTime * jumpTime) / 2);
+  }
 
   return (
     <Canvas className="game-canvas" camera={{ position: [0, 2.8, 11], fov: 36, near: 0.1, far: 60 }} dpr={[1, 1.25]} gl={{ antialias: false, powerPreference: "high-performance" }} shadows>
@@ -692,6 +700,8 @@ function sampleClipAtTime(clip: THREE.AnimationClip, samplers: ClipSampler[], ac
         ? KNOCKDOWN_DURATION
         : action === "block"
           ? BLOCK_DURATION
+          : action === "jump"
+            ? JUMP_DURATION
         : clip.duration;
   const clipTime = Math.min(clip.duration, (actionTime / targetDuration) * clip.duration);
   for (const sampler of samplers) {
@@ -719,7 +729,9 @@ function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D,
       : 1;
     for (let index = 0; index < values.length; index += 3) {
       values[index] = animationId === "walk" ? hips.position.x : hips.position.x + (values[index] - startX) * 0.08;
-      values[index + 1] = hips.position.y + (values[index + 1] - startY) * verticalScale;
+      values[index + 1] = animationId === "jumping"
+        ? hips.position.y
+        : hips.position.y + (values[index + 1] - startY) * verticalScale;
       values[index + 2] = animationId === "walk" ? hips.position.z : hips.position.z + (values[index + 2] - startZ) * 0.08;
     }
   }
@@ -746,6 +758,8 @@ function playAnimation(
       ? KNOCKDOWN_DURATION
       : fighterAction === "block"
         ? BLOCK_DURATION
+        : fighterAction === "jump"
+          ? JUMP_DURATION
       : null;
   next.timeScale = targetDuration ? next.getClip().duration / targetDuration : 1;
   current.current = animationId;

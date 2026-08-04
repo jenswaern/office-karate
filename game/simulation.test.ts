@@ -118,6 +118,21 @@ describe("Office Karate simulation", () => {
     expect(next.fighters[0].action).toBe("block");
   });
 
+  it("plays one jump action for the full airborne arc", () => {
+    const game = inertGame();
+    game.fighters[0].action = "idle";
+
+    let next = tickGame(game, 1 / 60, { jump: true });
+    expect(next.fighters[0].action).toBe("jump");
+    expect(next.fighters[0].y).toBeGreaterThan(0);
+
+    for (let elapsed = 0; elapsed < 1; elapsed += 1 / 60) {
+      next = tickGame(next, 1 / 60);
+    }
+    expect(next.fighters[0].action).toBe("idle");
+    expect(next.fighters[0].y).toBe(0);
+  });
+
   it("enters sudden death on a tied timer and ends on the next point", () => {
     const game = inertGame();
     game.timeLeft = 0.005;
