@@ -645,13 +645,15 @@ function useArcadeAudio(muted: boolean) {
   const step = useRef(0);
 
   const ensure = useCallback(() => {
-    if (!context.current) {
+    if (!context.current || context.current.state === "closed") {
       context.current = new AudioContext();
       master.current = context.current.createGain();
       master.current.gain.value = muted ? 0 : 0.16;
       master.current.connect(context.current.destination);
     }
-    void context.current.resume();
+    if (context.current.state === "suspended") {
+      void context.current.resume().catch(() => undefined);
+    }
     return context.current;
   }, [muted]);
 
@@ -660,8 +662,16 @@ function useArcadeAudio(muted: boolean) {
   }, [muted]);
 
   useEffect(() => () => {
-    if (musicTimer.current) window.clearInterval(musicTimer.current);
-    void context.current?.close();
+    if (musicTimer.current) {
+      window.clearInterval(musicTimer.current);
+      musicTimer.current = null;
+    }
+    const activeContext = context.current;
+    context.current = null;
+    master.current = null;
+    if (activeContext && activeContext.state !== "closed") {
+      void activeContext.close().catch(() => undefined);
+    }
   }, []);
 
   const tone = useCallback((frequency: number, duration: number, type: OscillatorType, gain = 0.28) => {
