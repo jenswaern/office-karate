@@ -294,6 +294,97 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 .crt { position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: .11; background: repeating-linear-gradient(0deg, transparent 0 3px, #000 3px 4px); mix-blend-mode: multiply; }
 .mobile-gate { display: none; }
 
+.harness-shell {
+  min-height: 100vh;
+  padding: 24px;
+  background: #0d1026;
+  color: var(--paper);
+}
+.harness-header {
+  height: 74px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.harness-header h1 { margin: 10px 0 0; color: var(--yellow); font-size: clamp(22px, 3vw, 40px); line-height: 1; }
+.harness-header a { color: var(--cyan); font-size: 8px; text-decoration: none; border: 1px solid #424970; padding: 10px 12px; }
+.harness-header a:hover { color: var(--paper); border-color: var(--paper); }
+.harness-layout {
+  height: calc(100vh - 122px);
+  min-height: 580px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 18px;
+}
+.harness-stage {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 2px solid #3b4167;
+  box-shadow: 8px 8px 0 #080a1b;
+  background: #11152c;
+}
+.harness-stage__axis {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(103,213,210,.65) 0 4px, transparent 4px 10px);
+}
+.harness-stage__readout {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(10,12,30,.82);
+  border-left: 4px solid var(--cyan);
+  font-size: 8px;
+}
+.harness-stage__readout strong { color: var(--yellow); font-size: 11px; }
+.harness-controls {
+  overflow: auto;
+  padding: 16px;
+  border: 2px solid #3b4167;
+  background: #151936;
+  box-shadow: 8px 8px 0 #080a1b;
+}
+.harness-control { margin: 0 0 18px; padding: 0; border: 0; min-width: 0; }
+.harness-control label, .harness-control legend { display: block; margin-bottom: 8px; color: #858db2; font-size: 8px; letter-spacing: .08em; }
+.harness-control select {
+  width: 100%;
+  border: 1px solid #59618a;
+  border-radius: 0;
+  padding: 11px;
+  color: var(--paper);
+  background: #10142d;
+  font: inherit;
+  font-size: 9px;
+}
+.harness-control select:disabled, .harness-control:disabled { opacity: .38; }
+.harness-control__row { display: flex; justify-content: space-between; align-items: center; }
+.harness-control__row span { color: var(--yellow); font-size: 8px; }
+.harness-control input[type="range"] { width: 100%; accent-color: var(--pink); cursor: ew-resize; }
+.harness-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.harness-segmented--three { grid-template-columns: repeat(3, 1fr); }
+.harness-segmented button, .harness-transport button {
+  min-height: 38px;
+  border: 1px solid #4a527c;
+  color: #9299bd;
+  background: #10142d;
+  cursor: pointer;
+  font-size: 7px;
+  line-height: 1.4;
+}
+.harness-segmented button:hover, .harness-segmented button.is-active { border-color: var(--yellow); color: var(--ink); background: var(--yellow); }
+.harness-transport { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.harness-transport button:first-child { color: var(--ink); background: var(--cyan); border-color: var(--cyan); }
+.harness-note { margin: 20px 0 0; color: #71799f; font-size: 7px; line-height: 1.7; }
+
 @keyframes danger { 50% { background: var(--yellow); color: var(--ink); } }
 @keyframes score-hit {
   0%, 100% { transform: translate(0); }
@@ -328,4 +419,12 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   .title-lockup h1 { font-size: 70px; margin: 18px 0; }
   .fighter-card { height: 59px; }
   .controls-panel { gap: 10px; }
+}
+
+@media (max-width: 900px) {
+  .harness-shell { padding: 14px; }
+  .harness-header { height: 92px; }
+  .harness-layout { height: auto; min-height: 0; grid-template-columns: 1fr; }
+  .harness-stage { height: 58vh; min-height: 400px; }
+  .harness-controls { overflow: visible; }
 }

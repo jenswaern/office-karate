@@ -159,7 +159,6 @@ export function tickGame(
     updateFighter(fighter, input, step);
   }
 
-  separateFighters(next.fighters);
   resolveAttacks(next);
 
   if (!next.suddenDeath && next.timeLeft <= 0) {
@@ -344,20 +343,6 @@ function updateAiAndGetInput(fighter: FighterState, state: GameState, dt: number
     case "kick": return { kick: true };
     case "block": return { block: true };
   }
-}
-
-function separateFighters(fighters: FighterState[]) {
-  const grounded = [...fighters].sort((a, b) => a.x - b.x);
-  const minimumGap = 0.74;
-  for (let index = 1; index < grounded.length; index += 1) {
-    const left = grounded[index - 1];
-    const right = grounded[index];
-    const overlap = minimumGap - (right.x - left.x);
-    if (overlap <= 0 || left.y > 0.6 || right.y > 0.6) continue;
-    left.x -= overlap / 2;
-    right.x += overlap / 2;
-  }
-  for (const fighter of grounded) fighter.x = clamp(fighter.x, -ARENA_LIMIT, ARENA_LIMIT);
 }
 
 function finishGame(state: GameState, winnerId: string) {

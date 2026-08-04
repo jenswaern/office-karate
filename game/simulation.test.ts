@@ -122,13 +122,23 @@ describe("Office Karate simulation", () => {
     expect(next.timeLeft).toBe(60);
   });
 
-  it("keeps fighters inside the arena and separates grounded overlaps", () => {
+  it("keeps fighters inside the arena but allows them to pass through each other", () => {
     const game = inertGame();
     game.fighters[0].x = ARENA_LIMIT + 4;
     game.fighters[1].x = 0;
     game.fighters[2].x = 0;
     const next = tickGame(game, 1 / 60);
     expect(next.fighters[0].x).toBeLessThanOrEqual(ARENA_LIMIT);
-    expect(Math.abs(next.fighters[1].x - next.fighters[2].x)).toBeGreaterThanOrEqual(0.73);
+    expect(next.fighters[1].x).toBe(next.fighters[2].x);
+  });
+
+  it("lets a moving fighter cross an opponent's position", () => {
+    const game = inertGame();
+    game.fighters[0].action = "idle";
+    game.fighters[0].x = -0.04;
+    game.fighters[1].x = 0;
+    game.fighters[2].x = 4;
+    const crossed = tickGame(game, 0.05, { right: true });
+    expect(crossed.fighters[0].x).toBeGreaterThan(crossed.fighters[1].x);
   });
 });

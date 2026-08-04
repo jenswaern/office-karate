@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { EffectComposer } from "@react-three/postprocessing";
@@ -252,6 +253,235 @@ export default function OfficeKarate() {
   );
 }
 
+const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }[] = [
+  { value: "idle", label: "FIGHTING IDLE", duration: 2.5 },
+  { value: "walk", label: "WALK", duration: 2.5 },
+  { value: "crouch", label: "CROUCH", duration: 2.5 },
+  { value: "punch", label: "PUNCH", duration: 0.58 },
+  { value: "kick", label: "KICK", duration: 0.82 },
+  { value: "block", label: "BLOCK", duration: 2.5 },
+  { value: "knockdown", label: "KNOCKDOWN", duration: KNOCKDOWN_DURATION },
+  { value: "victory", label: "VICTORY", duration: 2.5 },
+];
+
+export function OfficeKarateHarness() {
+  const [characterId, setCharacterId] = useState(CHARACTERS[0].id);
+  const [opponentId, setOpponentId] = useState(CHARACTERS[1].id);
+  const [action, setAction] = useState<FighterAction>("knockdown");
+  const [region, setRegion] = useState<HitRegion>("high");
+  const [mode, setMode] = useState<"pose" | "crossing">("pose");
+  const [playing, setPlaying] = useState(true);
+  const [time, setTime] = useState(0);
+  const duration = mode === "crossing"
+    ? 4
+    : HARNESS_ACTIONS.find((entry) => entry.value === action)?.duration ?? 2.5;
+
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    let previous = performance.now();
+    const animate = (now: number) => {
+      const delta = Math.min((now - previous) / 1000, 0.05);
+      previous = now;
+      setTime((current) => (current + delta) % duration);
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [duration, playing]);
+
+  const selectAction = (next: FighterAction) => {
+    setAction(next);
+    setMode("pose");
+    setTime(0);
+  };
+
+  const selectMode = (next: "pose" | "crossing") => {
+    setMode(next);
+    setTime(0);
+  };
+
+  return (
+    <main className="harness-shell">
+      <header className="harness-header">
+        <div>
+          <span className="eyebrow">OFFICE KARATE / LAB</span>
+          <h1>ANIMATION HARNESS</h1>
+        </div>
+        <Link href="/">← TILL SPELET</Link>
+      </header>
+
+      <section className="harness-layout">
+        <div className="harness-stage">
+          <HarnessCanvas
+            characterId={characterId}
+            opponentId={opponentId}
+            action={action}
+            region={region}
+            mode={mode}
+            time={time}
+          />
+          <div className="harness-stage__axis" aria-hidden="true" />
+          <div className="harness-stage__readout">
+            <span>{mode === "crossing" ? "PASS-THROUGH" : action.toUpperCase()}</span>
+            <strong>{time.toFixed(2)}s</strong>
+          </div>
+        </div>
+
+        <aside className="harness-controls">
+          <div className="harness-control">
+            <label htmlFor="harness-character">FIGHTER A</label>
+            <select id="harness-character" value={characterId} onChange={(event) => setCharacterId(event.target.value)}>
+              {CHARACTERS.map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}
+            </select>
+          </div>
+          <div className="harness-control">
+            <label htmlFor="harness-opponent">FIGHTER B</label>
+            <select id="harness-opponent" value={opponentId} onChange={(event) => setOpponentId(event.target.value)}>
+              {CHARACTERS.map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}
+            </select>
+          </div>
+
+          <fieldset className="harness-control">
+            <legend>TEST MODE</legend>
+            <div className="harness-segmented">
+              <button type="button" className={mode === "pose" ? "is-active" : ""} onClick={() => selectMode("pose")}>POSE</button>
+              <button type="button" className={mode === "crossing" ? "is-active" : ""} onClick={() => selectMode("crossing")}>PASS THROUGH</button>
+            </div>
+          </fieldset>
+
+          <div className="harness-control">
+            <label htmlFor="harness-action">ACTION</label>
+            <select id="harness-action" value={action} onChange={(event) => selectAction(event.target.value as FighterAction)} disabled={mode === "crossing"}>
+              {HARNESS_ACTIONS.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>)}
+            </select>
+          </div>
+
+          <fieldset className="harness-control" disabled={action !== "knockdown" || mode === "crossing"}>
+            <legend>HIT REGION / FALL</legend>
+            <div className="harness-segmented harness-segmented--three">
+              {(["high", "mid", "low"] as HitRegion[]).map((value) => (
+                <button key={value} type="button" className={region === value ? "is-active" : ""} onClick={() => { setRegion(value); setTime(0); }}>
+                  {value === "high" ? "HIGH / BACK" : value === "mid" ? "MID / SPIN" : "LOW / SWEEP"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="harness-control">
+            <div className="harness-control__row"><label htmlFor="harness-time">TIMELINE</label><span>{time.toFixed(2)} / {duration.toFixed(2)}</span></div>
+            <input id="harness-time" type="range" min="0" max={duration} step="0.01" value={time} onChange={(event) => { setPlaying(false); setTime(Number(event.target.value)); }} />
+          </div>
+
+          <div className="harness-transport">
+            <button type="button" onClick={() => setPlaying((current) => !current)}>{playing ? "Ⅱ PAUSE" : "▶ PLAY"}</button>
+            <button type="button" onClick={() => { setPlaying(false); setTime(0); }}>↺ RESET</button>
+          </div>
+
+          <p className="harness-note">Den här sidan använder spelets riktiga modeller, klipp och posekod. Ändringar här är därför direkt representativa för matchen.</p>
+        </aside>
+      </section>
+    </main>
+  );
+}
+
+function HarnessCanvas({
+  characterId,
+  opponentId,
+  action,
+  region,
+  mode,
+  time,
+}: {
+  characterId: string;
+  opponentId: string;
+  action: FighterAction;
+  region: HitRegion;
+  mode: "pose" | "crossing";
+  time: number;
+}) {
+  const crossingProgress = mode === "crossing" ? time / 4 : 0;
+  const variant = region === "high" ? "back" : region === "mid" ? "spin" : "sweep";
+  const first = makeHarnessFighter({
+    id: "harness-a",
+    characterId,
+    x: mode === "crossing" ? -3.5 + crossingProgress * 7 : 0,
+    facing: mode === "crossing" ? 1 : -1,
+    action: mode === "crossing" ? "walk" : action,
+    actionTime: mode === "crossing" ? time % 2.5 : time,
+    region,
+    variant,
+  });
+  const second = makeHarnessFighter({
+    id: "harness-b",
+    characterId: opponentId,
+    x: 3.5 - crossingProgress * 7,
+    facing: -1,
+    action: "walk",
+    actionTime: time % 2.5,
+    region: null,
+    variant: "back",
+  });
+
+  return (
+    <Canvas className="game-canvas" camera={{ position: [0, 2.8, 11], fov: 36, near: 0.1, far: 60 }} dpr={[1, 1.25]} gl={{ antialias: false, powerPreference: "high-performance" }} shadows>
+      <color attach="background" args={["#10142d"]} />
+      <fog attach="fog" args={["#11152c", 13, 25]} />
+      <ambientLight intensity={1.55} color="#8ea8ff" />
+      <directionalLight position={[-4, 8, 7]} intensity={3.2} color="#ffe8b6" castShadow shadow-mapSize={[1024, 1024]} />
+      <pointLight position={[5, 4, 3]} intensity={8} distance={10} color="#ee4e9b" />
+      <Arena />
+      <Suspense fallback={null}>
+        <FighterModel fighter={first} preview={false} animationTimeOverride={mode === "crossing" ? time % 2.5 : time} />
+        {mode === "crossing" && <FighterModel fighter={second} preview={false} animationTimeOverride={time % 2.5} />}
+      </Suspense>
+      <EffectComposer multisampling={0}><RetroEffect /></EffectComposer>
+    </Canvas>
+  );
+}
+
+function makeHarnessFighter({
+  id,
+  characterId,
+  x,
+  facing,
+  action,
+  actionTime,
+  region,
+  variant,
+}: {
+  id: string;
+  characterId: string;
+  x: number;
+  facing: -1 | 1;
+  action: FighterAction;
+  actionTime: number;
+  region: HitRegion | null;
+  variant: FighterState["knockdownVariant"];
+}): FighterState {
+  return {
+    id,
+    characterId,
+    control: "player",
+    x,
+    y: 0,
+    velocityY: 0,
+    facing,
+    score: 0,
+    action,
+    actionTime,
+    cooldown: 0,
+    invulnerable: 0,
+    attackConnected: false,
+    knockbackVelocity: 0,
+    knockdownVariant: variant,
+    lastHitRegion: region,
+    aiThink: 0,
+    aiTargetId: null,
+    aiIntent: "approach",
+  };
+}
+
 function GameCanvas({ game, previewCharacter }: { game: GameState | null; previewCharacter: CharacterDefinition }) {
   const previewFighter: FighterState = {
     id: "preview",
@@ -347,7 +577,15 @@ function Arena() {
   );
 }
 
-function FighterModel({ fighter, preview }: { fighter: FighterState; preview: boolean }) {
+function FighterModel({
+  fighter,
+  preview,
+  animationTimeOverride,
+}: {
+  fighter: FighterState;
+  preview: boolean;
+  animationTimeOverride?: number;
+}) {
   const definition = CHARACTERS.find((character) => character.id === fighter.characterId) ?? CHARACTERS[0];
   const { scene } = useGLTF(definition.modelUrl);
   const model = useMemo(() => {
@@ -385,7 +623,7 @@ function FighterModel({ fighter, preview }: { fighter: FighterState; preview: bo
     Promise.all(ANIMATIONS.map(async (animation) => {
       const source = await loadClip(animation.url);
       if (cancelled) return;
-      const clip = prepareClipForModel(source, model);
+      const clip = prepareClipForModel(source, model, animation.id);
       const action = mixer.clipAction(clip, model);
       action.setLoop(animation.loop ? THREE.LoopRepeat : THREE.LoopOnce, animation.loop ? Infinity : 1);
       action.clampWhenFinished = !animation.loop;
@@ -408,7 +646,15 @@ function FighterModel({ fighter, preview }: { fighter: FighterState; preview: bo
   }, [fighter.action]);
 
   useFrame((_, delta) => {
-    mixer.update(Math.min(delta, 0.05));
+    if (animationTimeOverride === undefined) {
+      mixer.update(Math.min(delta, 0.05));
+    } else {
+      const active = currentAnimation.current ? actions.current.get(currentAnimation.current) : undefined;
+      if (active) {
+        active.time = Math.min(active.getClip().duration, animationTimeOverride * active.timeScale);
+        mixer.update(0);
+      }
+    }
     if (!group.current) return;
     const pulse = Math.sin(performance.now() * 0.025);
     const knockdown = getKnockdownPose(fighter);
@@ -451,11 +697,11 @@ function getKnockdownPose(fighter: FighterState) {
 
   switch (fighter.knockdownVariant) {
     case "back":
-      return { ...empty, rotationZ: -fighter.facing * 1.18 * fall, offsetX: -fighter.facing * 0.2 * fall, offsetY: 0.14 * fall + settle };
+      return { ...empty, rotationZ: -fighter.facing * 1.52 * fall, offsetX: -fighter.facing * 0.28 * fall, offsetY: 0.08 * fall + settle };
     case "spin":
-      return { ...empty, rotationY: fighter.facing * 2.45 * fall, rotationZ: -fighter.facing * 0.88 * fall, offsetZ: 0.26 * fall, offsetY: 0.2 * fall + settle };
+      return { ...empty, rotationY: fighter.facing * 2.8 * fall, rotationZ: -fighter.facing * 1.5 * fall, offsetZ: 0.32 * fall, offsetY: 0.1 * fall + settle };
     case "sweep":
-      return { ...empty, rotationX: fighter.facing * 0.2 * fall, rotationZ: fighter.facing * 1.48 * fall, offsetX: fighter.facing * 0.16 * fall, offsetY: -0.08 * fall + settle };
+      return { ...empty, rotationX: fighter.facing * 0.24 * fall, rotationZ: fighter.facing * 1.57 * fall, offsetX: fighter.facing * 0.22 * fall, offsetY: -0.16 * fall + settle };
   }
 }
 
@@ -463,7 +709,7 @@ function easeOutCubic(value: number) {
   return 1 - Math.pow(1 - value, 3);
 }
 
-function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D) {
+function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D, animationId: string) {
   const clip = source.clone();
   clip.tracks = clip.tracks
     .filter((track) => model.getObjectByName(track.name.split(".")[0]))
@@ -476,9 +722,9 @@ function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D)
     const startY = values[1];
     const startZ = values[2];
     for (let index = 0; index < values.length; index += 3) {
-      values[index] = hips.position.x + (values[index] - startX) * 0.08;
+      values[index] = animationId === "walk" ? hips.position.x : hips.position.x + (values[index] - startX) * 0.08;
       values[index + 1] = hips.position.y + (values[index + 1] - startY);
-      values[index + 2] = hips.position.z + (values[index + 2] - startZ) * 0.08;
+      values[index + 2] = animationId === "walk" ? hips.position.z : hips.position.z + (values[index + 2] - startZ) * 0.08;
     }
   }
   return clip;
