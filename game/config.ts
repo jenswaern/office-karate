@@ -30,7 +30,9 @@ export const ANIMATIONS: AnimationDefinition[] = [
   { id: "walk", url: "/assets/animations/walk.json", loop: true, blendTime: 0.14 },
   { id: "punch", url: "/assets/animations/punch.json", loop: false, blendTime: 0.08, hitFrame: 0.26 },
   { id: "kick", url: "/assets/animations/kick.json", loop: false, blendTime: 0.08, hitFrame: 0.42 },
-  { id: "defeat", url: "/assets/animations/defeat.json", loop: false, blendTime: 0.12 },
+  { id: "knockedOut", url: "/assets/animations/knocked-out.json", loop: false, blendTime: 0.08 },
+  { id: "dying", url: "/assets/animations/dying.json", loop: false, blendTime: 0.08 },
+  { id: "sweepFall", url: "/assets/animations/sweep-fall.json", loop: false, blendTime: 0.08 },
   { id: "victory", url: "/assets/animations/victory.json", loop: true, blendTime: 0.18 },
 ];
 
@@ -43,6 +45,6 @@ export const ACTION_ANIMATION: Record<FighterAction, string> = {
   kick: "kick",
   block: "fightingIdle",
   hit: "fightingIdle",
-  knockdown: "defeat",
+  knockdown: "knockedOut",
   victory: "victory",
 };

@@ -1,11 +1,11 @@
 export const MATCH_SECONDS = 60;
 export const ARENA_LIMIT = 5.6;
 export const FIXED_STEP = 1 / 60;
-export const KNOCKDOWN_DURATION = 1.55;
+export const KNOCKDOWN_DURATION = 2;
 export const HIT_EFFECT_DURATION = 0.68;
 
 export type HitRegion = "high" | "mid" | "low";
-export type KnockdownVariant = "back" | "spin" | "sweep";
+export type KnockdownVariant = "back" | "dying" | "sweep";
 
 export type FighterAction =
   | "idle"
@@ -365,9 +365,9 @@ function resolveHitRegion(attacker: FighterState, target: FighterState): HitRegi
 
 function hitResponse(region: HitRegion): { variant: KnockdownVariant; lift: number; knockback: number } {
   switch (region) {
-    case "high": return { variant: "back", lift: 1.15, knockback: 2.25 };
-    case "mid": return { variant: "spin", lift: 1.75, knockback: 1.65 };
-    case "low": return { variant: "sweep", lift: 0.42, knockback: 2.8 };
+    case "high": return { variant: "back", lift: 0, knockback: 1.9 };
+    case "mid": return { variant: "dying", lift: 0, knockback: 1.35 };
+    case "low": return { variant: "sweep", lift: 0, knockback: 2.15 };
   }
 }
 

@@ -342,7 +342,7 @@ export function OfficeKarateHarness() {
             <div className="harness-segmented harness-segmented--three">
               {(["high", "mid", "low"] as HitRegion[]).map((value) => (
                 <button key={value} type="button" className={region === value ? "is-active" : ""} onClick={() => { setRegion(value); setTime(0); }}>
-                  {value === "high" ? "HIGH / BACK" : value === "mid" ? "MID / SPIN" : "LOW / SWEEP"}
+                  {value === "high" ? "HIGH / KNOCKED OUT" : value === "mid" ? "MID / DYING" : "LOW / SWEEP FALL"}
                 </button>
               ))}
             </div>
@@ -376,7 +376,7 @@ function HarnessCanvas({
   region: HitRegion;
   time: number;
 }) {
-  const variant = region === "high" ? "back" : region === "mid" ? "spin" : "sweep";
+  const variant = region === "high" ? "back" : region === "mid" ? "dying" : "sweep";
   const fighter = makeHarnessFighter({
     id: "harness",
     characterId,
@@ -573,10 +573,12 @@ function FighterModel({
   const currentAnimation = useRef<string | null>(null);
   const group = useRef<THREE.Group>(null);
   const fighterAction = useRef(fighter.action);
+  const fighterAnimationId = useRef(getFighterAnimationId(fighter.action, fighter.knockdownVariant));
 
   useEffect(() => {
     fighterAction.current = fighter.action;
-  }, [fighter.action]);
+    fighterAnimationId.current = getFighterAnimationId(fighter.action, fighter.knockdownVariant);
+  }, [fighter.action, fighter.knockdownVariant]);
 
   useEffect(() => {
     let cancelled = false;
@@ -592,8 +594,7 @@ function FighterModel({
       actions.current.set(animation.id, action);
     })).then(() => {
       if (cancelled) return;
-      const animationId = ACTION_ANIMATION[fighterAction.current];
-      playAnimation(animationId, fighterAction.current, actions.current, currentAnimation);
+      playAnimation(fighterAnimationId.current, fighterAction.current, actions.current, currentAnimation);
     });
     return () => {
       cancelled = true;
@@ -603,9 +604,8 @@ function FighterModel({
   }, [mixer, model]);
 
   useEffect(() => {
-    const animationId = ACTION_ANIMATION[fighter.action];
-    playAnimation(animationId, fighter.action, actions.current, currentAnimation);
-  }, [fighter.action]);
+    playAnimation(getFighterAnimationId(fighter.action, fighter.knockdownVariant), fighter.action, actions.current, currentAnimation);
+  }, [fighter.action, fighter.knockdownVariant]);
 
   useFrame((_, delta) => {
     if (animationTimeOverride === undefined) {
@@ -620,10 +620,8 @@ function FighterModel({
     }
     if (!group.current) return;
     const pulse = Math.sin(performance.now() * 0.025);
-    const knockdown = getKnockdownPose(fighter);
-    group.current.rotation.set(knockdown.rotationX, knockdown.rotationY, knockdown.rotationZ);
-    group.current.rotation.z += fighter.action === "hit" ? pulse * 0.045 : 0;
-    group.current.position.set(knockdown.offsetX, fighter.action === "crouch" ? -0.34 : knockdown.offsetY, knockdown.offsetZ);
+    group.current.rotation.set(0, 0, fighter.action === "hit" ? pulse * 0.045 : 0);
+    group.current.position.set(0, fighter.action === "crouch" ? -0.34 : 0, 0);
     group.current.scale.set(1, fighter.action === "crouch" ? 0.86 : 1, 1);
   });
 
@@ -652,24 +650,11 @@ function FighterModel({
   );
 }
 
-function getKnockdownPose(fighter: FighterState) {
-  const empty = { rotationX: 0, rotationY: 0, rotationZ: 0, offsetX: 0, offsetY: 0, offsetZ: 0 };
-  if (fighter.action !== "knockdown") return empty;
-  const fall = easeOutCubic(Math.min(fighter.actionTime / 0.42, 1));
-  const settle = Math.sin(Math.min(fighter.actionTime / KNOCKDOWN_DURATION, 1) * Math.PI) * 0.08;
-
-  switch (fighter.knockdownVariant) {
-    case "back":
-      return { ...empty, rotationZ: -fighter.facing * 1.52 * fall, offsetX: -fighter.facing * 0.28 * fall, offsetY: 0.08 * fall + settle };
-    case "spin":
-      return { ...empty, rotationY: fighter.facing * 2.8 * fall, rotationZ: -fighter.facing * 1.5 * fall, offsetZ: 0.32 * fall, offsetY: 0.1 * fall + settle };
-    case "sweep":
-      return { ...empty, rotationX: fighter.facing * 0.24 * fall, rotationZ: fighter.facing * 1.57 * fall, offsetX: fighter.facing * 0.22 * fall, offsetY: -0.16 * fall + settle };
-  }
-}
-
-function easeOutCubic(value: number) {
-  return 1 - Math.pow(1 - value, 3);
+function getFighterAnimationId(action: FighterAction, knockdownVariant: FighterState["knockdownVariant"]) {
+  if (action !== "knockdown") return ACTION_ANIMATION[action];
+  if (knockdownVariant === "sweep") return "sweepFall";
+  if (knockdownVariant === "dying") return "dying";
+  return "knockedOut";
 }
 
 function createClipSamplers(clip: THREE.AnimationClip, model: THREE.Object3D): ClipSampler[] {
@@ -719,9 +704,13 @@ function prepareClipForModel(source: THREE.AnimationClip, model: THREE.Object3D,
     const startX = values[0];
     const startY = values[1];
     const startZ = values[2];
+    const isFallClip = animationId === "knockedOut" || animationId === "dying" || animationId === "sweepFall";
+    const verticalScale = isFallClip && Math.abs(startY) > 0.001
+      ? Math.min(1, Math.abs(hips.position.y / startY))
+      : 1;
     for (let index = 0; index < values.length; index += 3) {
       values[index] = animationId === "walk" ? hips.position.x : hips.position.x + (values[index] - startX) * 0.08;
-      values[index + 1] = hips.position.y + (values[index + 1] - startY);
+      values[index + 1] = hips.position.y + (values[index + 1] - startY) * verticalScale;
       values[index + 2] = animationId === "walk" ? hips.position.z : hips.position.z + (values[index + 2] - startZ) * 0.08;
     }
   }

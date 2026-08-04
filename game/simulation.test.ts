@@ -52,7 +52,7 @@ describe("Office Karate simulation", () => {
     bodyGame.fighters[1].x = 1;
     const bodyHit = tickGame(bodyGame, 1 / 60);
     expect(bodyHit.fighters[1].lastHitRegion).toBe("mid");
-    expect(bodyHit.fighters[1].knockdownVariant).toBe("spin");
+    expect(bodyHit.fighters[1].knockdownVariant).toBe("dying");
 
     const lowGame = inertGame();
     lowGame.fighters[0].action = "kick";
