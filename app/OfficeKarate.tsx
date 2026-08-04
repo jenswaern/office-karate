@@ -842,7 +842,7 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
     <div className="hit-feedback-layer" aria-live="polite">
       {effects.map((effect) => {
         const left = 8 + ((effect.x + 5.6) / 11.2) * 84;
-        const top = effect.region === "high" ? 43 : effect.region === "mid" ? 51 : 60;
+        const top = effect.region === "low" ? 46 : effect.attack === "kick" || effect.region === "high" ? 29 : 37;
         const blocked = effect.kind === "blocked";
         const knockout = effect.kind === "ko";
         const label = blocked ? "NO POINT" : knockout ? "OUT!" : effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
@@ -856,8 +856,10 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
             } as React.CSSProperties}
           >
             <HitParticles effect={effect} />
-            <strong>{blocked ? "BLOCKED" : knockout ? "KO!" : "+1"}</strong>
-            <small>{label}</small>
+            <span className="hit-feedback__label">
+              <strong>{blocked ? "BLOCKED" : knockout ? "KO!" : "+1"}</strong>
+              <small>{label}</small>
+            </span>
           </div>
         );
       })}
@@ -866,13 +868,16 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
 }
 
 const SWEAT_PARTICLES = [
-  { velocityX: 12, velocityY: -154, size: 4, color: "#ffffff" },
-  { velocityX: 29, velocityY: -188, size: 3, color: "#d9ffff" },
-  { velocityX: 46, velocityY: -138, size: 5, color: "#ffffff" },
-  { velocityX: 64, velocityY: -172, size: 3, color: "#67d5d2" },
-  { velocityX: 82, velocityY: -116, size: 4, color: "#ffffff" },
-  { velocityX: -19, velocityY: -128, size: 3, color: "#d9ffff" },
-  { velocityX: -37, velocityY: -102, size: 4, color: "#ffffff" },
+  { velocityX: 10, velocityY: -154, color: "#ffffff" },
+  { velocityX: 23, velocityY: -188, color: "#d9ffff" },
+  { velocityX: 37, velocityY: -138, color: "#ffffff" },
+  { velocityX: 52, velocityY: -172, color: "#67d5d2" },
+  { velocityX: 67, velocityY: -116, color: "#ffffff" },
+  { velocityX: 82, velocityY: -148, color: "#d9ffff" },
+  { velocityX: -14, velocityY: -168, color: "#ffffff" },
+  { velocityX: -25, velocityY: -128, color: "#d9ffff" },
+  { velocityX: -37, velocityY: -102, color: "#ffffff" },
+  { velocityX: 46, velocityY: -96, color: "#ffffff" },
 ] as const;
 
 function HitParticles({ effect }: { effect: HitEffect }) {
@@ -898,7 +903,6 @@ function HitParticles({ effect }: { effect: HitEffect }) {
           <i
             key={index}
             style={{
-              "--particle-size": `${particle.size}px`,
               "--particle-color": effect.kind === "blocked" ? "#67d5d2" : particle.color,
               "--particle-x25": `${quarter.x}px`,
               "--particle-y25": `${quarter.y}px`,

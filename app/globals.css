@@ -247,9 +247,8 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   position: absolute;
   left: var(--hit-left);
   top: var(--hit-top);
-  width: 88px;
-  height: 88px;
-  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
   animation: hit-pop .68s steps(6, end) both;
   filter: drop-shadow(4px 4px 0 rgba(8, 10, 28, .8));
 }
@@ -259,22 +258,28 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 .hit-feedback--ko { --hit-color: var(--pink); }
 .hit-feedback__particles {
   position: absolute;
-  left: 44px;
-  top: 38px;
+  left: 0;
+  top: 0;
 }
 .hit-feedback__particles i {
   position: absolute;
-  width: var(--particle-size);
-  height: var(--particle-size);
+  width: 1px;
+  height: 1px;
   background: var(--particle-color);
-  box-shadow: 2px 2px 0 rgba(8, 10, 28, .55);
   image-rendering: pixelated;
   animation: sweat-particle .68s linear both;
 }
-.hit-feedback strong {
+.hit-feedback__label {
   position: absolute;
-  top: 25px;
-  left: 23px;
+  left: 0;
+  bottom: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  transform: translateX(-50%);
+}
+.hit-feedback strong {
+  position: static;
   min-width: 48px;
   padding: 7px 6px 5px;
   border: 3px solid var(--paper);
@@ -286,10 +291,7 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   box-shadow: 3px 3px 0 var(--ink);
 }
 .hit-feedback small {
-  position: absolute;
-  left: 50%;
-  top: 72px;
-  transform: translateX(-50%);
+  position: static;
   color: var(--paper);
   font-size: 7px;
   letter-spacing: .08em;
@@ -297,7 +299,6 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   white-space: nowrap;
 }
 .hit-feedback--blocked strong {
-  left: 4px;
   min-width: 80px;
   padding-inline: 4px;
   background: #2551d8;
@@ -429,9 +430,9 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   75% { transform: translate(-2px, -1px); }
 }
 @keyframes hit-pop {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(.15); }
-  12%, 58% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  0% { opacity: 0; }
+  8%, 72% { opacity: 1; }
+  100% { opacity: 0; }
 }
 @keyframes sweat-particle {
   0% { opacity: 0; transform: translate(0, 0); }

@@ -68,6 +68,7 @@ export type FighterState = {
 export type HitEffect = {
   id: number;
   kind: "hit" | "blocked" | "ko";
+  attack?: "punch" | "kick";
   attackerId: string;
   targetId: string;
   x: number;
@@ -292,6 +293,7 @@ function resolveAttacks(state: GameState) {
       state.hitEffects.push({
         id: state.nextHitEffectId,
         kind: "blocked",
+        attack: attacker.action === "kick" ? "kick" : "punch",
         attackerId: attacker.id,
         targetId: target.id,
         x: target.x,
@@ -318,6 +320,7 @@ function resolveAttacks(state: GameState) {
     state.hitEffects.push({
       id: state.nextHitEffectId,
       kind: target.knockedOut ? "ko" : "hit",
+      attack: attacker.action === "kick" ? "kick" : "punch",
       attackerId: attacker.id,
       targetId: target.id,
       x: target.x - direction * 0.22,

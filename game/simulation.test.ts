@@ -60,7 +60,7 @@ describe("Office Karate simulation", () => {
     expect(afterHit.fighters[1].knockdownVariant).toBe("back");
     expect(afterHit.fighters[1].lastHitRegion).toBe("high");
     expect(afterHit.hitEffects).toMatchObject([
-      { kind: "hit", attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
+      { kind: "hit", attack: "punch", attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
     ]);
 
     const afterSecondTick = tickGame(afterHit, 1 / 60);
@@ -90,6 +90,7 @@ describe("Office Karate simulation", () => {
     const bodyHit = tickGame(bodyGame, 1 / 60);
     expect(bodyHit.fighters[1].lastHitRegion).toBe("mid");
     expect(bodyHit.fighters[1].knockdownVariant).toBe("dying");
+    expect(bodyHit.hitEffects.at(-1)?.attack).toBe("kick");
 
     const lowGame = inertGame();
     lowGame.fighters[0].action = "kick";
@@ -134,7 +135,7 @@ describe("Office Karate simulation", () => {
     expect(next.fighters[0].score).toBe(0);
     expect(next.fighters[0].attackConnected).toBe(true);
     expect(next.hitEffects).toMatchObject([
-      { kind: "blocked", attackerId: "player", targetId: "cpu-1" },
+      { kind: "blocked", attack: "punch", attackerId: "player", targetId: "cpu-1" },
     ]);
   });
 
