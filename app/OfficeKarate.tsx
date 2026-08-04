@@ -855,7 +855,7 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
               "--hit-top": `${top}%`,
             } as React.CSSProperties}
           >
-            <span className="hit-feedback__burst" />
+            <HitParticles effect={effect} />
             <strong>{blocked ? "BLOCKED" : knockout ? "KO!" : "+1"}</strong>
             <small>{label}</small>
           </div>
@@ -864,6 +864,60 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
     </div>
   );
 }
+
+const SWEAT_PARTICLES = [
+  { velocityX: 12, velocityY: -154, size: 4, color: "#ffffff" },
+  { velocityX: 29, velocityY: -188, size: 3, color: "#d9ffff" },
+  { velocityX: 46, velocityY: -138, size: 5, color: "#ffffff" },
+  { velocityX: 64, velocityY: -172, size: 3, color: "#67d5d2" },
+  { velocityX: 82, velocityY: -116, size: 4, color: "#ffffff" },
+  { velocityX: -19, velocityY: -128, size: 3, color: "#d9ffff" },
+  { velocityX: -37, velocityY: -102, size: 4, color: "#ffffff" },
+] as const;
+
+function HitParticles({ effect }: { effect: HitEffect }) {
+  const direction = effect.x === 0 ? (effect.id % 2 ? 1 : -1) : Math.sign(effect.x);
+  return (
+    <span className="hit-feedback__particles" aria-hidden="true">
+      {SWEAT_PARTICLES.map((particle, index) => {
+        const jitter = ((effect.id * 7 + index * 11) % 9) - 4;
+        const velocityX = particle.velocityX * direction + jitter * 2;
+        const velocityY = particle.velocityY + jitter * 3;
+        const position = (progress: number) => {
+          const time = HIT_PARTICLE_DURATION * progress;
+          return {
+            x: Math.round(velocityX * time),
+            y: Math.round(velocityY * time + 0.5 * HIT_PARTICLE_GRAVITY * time * time),
+          };
+        };
+        const quarter = position(0.25);
+        const half = position(0.5);
+        const threeQuarters = position(0.75);
+        const end = position(1);
+        return (
+          <i
+            key={index}
+            style={{
+              "--particle-size": `${particle.size}px`,
+              "--particle-color": effect.kind === "blocked" ? "#67d5d2" : particle.color,
+              "--particle-x25": `${quarter.x}px`,
+              "--particle-y25": `${quarter.y}px`,
+              "--particle-x50": `${half.x}px`,
+              "--particle-y50": `${half.y}px`,
+              "--particle-x75": `${threeQuarters.x}px`,
+              "--particle-y75": `${threeQuarters.y}px`,
+              "--particle-x100": `${end.x}px`,
+              "--particle-y100": `${end.y}px`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
+const HIT_PARTICLE_DURATION = 0.68;
+const HIT_PARTICLE_GRAVITY = 390;
 
 function Controls() {
   return (

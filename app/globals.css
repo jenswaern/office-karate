@@ -257,26 +257,19 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 .hit-feedback--low { --hit-color: var(--pink); }
 .hit-feedback--blocked { --hit-color: var(--cyan); }
 .hit-feedback--ko { --hit-color: var(--pink); }
-.hit-feedback__burst {
+.hit-feedback__particles {
   position: absolute;
-  inset: 2px;
-  background: var(--paper);
-  clip-path: polygon(48% 0, 57% 32%, 75% 8%, 69% 39%, 100% 35%, 72% 51%, 96% 68%, 64% 65%, 70% 100%, 51% 71%, 34% 97%, 38% 65%, 4% 78%, 31% 56%, 0 42%, 34% 40%, 18% 10%, 43% 34%);
-  animation: hit-spin .68s steps(6, end) both;
+  left: 44px;
+  top: 38px;
 }
-.hit-feedback__burst::before,
-.hit-feedback__burst::after {
-  content: "";
+.hit-feedback__particles i {
   position: absolute;
-  inset: 16px;
-  background: var(--hit-color);
-  clip-path: inherit;
-  transform: rotate(22deg);
-}
-.hit-feedback__burst::after {
-  inset: 33px;
-  background: var(--paper);
-  transform: rotate(45deg);
+  width: var(--particle-size);
+  height: var(--particle-size);
+  background: var(--particle-color);
+  box-shadow: 2px 2px 0 rgba(8, 10, 28, .55);
+  image-rendering: pixelated;
+  animation: sweat-particle .68s linear both;
 }
 .hit-feedback strong {
   position: absolute;
@@ -438,13 +431,15 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 @keyframes hit-pop {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(.15); }
   12%, 58% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -78%) scale(.72); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
-@keyframes hit-spin {
-  0% { transform: rotate(0deg) scale(.2); }
-  24% { transform: rotate(20deg) scale(1.16); }
-  58% { transform: rotate(42deg) scale(.9); }
-  100% { transform: rotate(78deg) scale(.45); }
+@keyframes sweat-particle {
+  0% { opacity: 0; transform: translate(0, 0); }
+  7% { opacity: 1; }
+  25% { opacity: 1; transform: translate(var(--particle-x25), var(--particle-y25)); }
+  50% { opacity: 1; transform: translate(var(--particle-x50), var(--particle-y50)); }
+  75% { opacity: .9; transform: translate(var(--particle-x75), var(--particle-y75)); }
+  100% { opacity: 0; transform: translate(var(--particle-x100), var(--particle-y100)); }
 }
 
 @media (max-width: 900px), (pointer: coarse) {
