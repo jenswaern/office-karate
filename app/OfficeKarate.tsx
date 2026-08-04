@@ -881,7 +881,7 @@ const SWEAT_PARTICLES = [
 ] as const;
 
 function HitParticles({ effect }: { effect: HitEffect }) {
-  const direction = effect.x === 0 ? (effect.id % 2 ? 1 : -1) : Math.sign(effect.x);
+  const direction = effect.attackerFacing ?? (effect.x === 0 ? (effect.id % 2 ? 1 : -1) : Math.sign(effect.x));
   return (
     <span className="hit-feedback__particles" aria-hidden="true">
       {SWEAT_PARTICLES.map((particle, index) => {

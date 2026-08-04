@@ -69,6 +69,7 @@ export type HitEffect = {
   id: number;
   kind: "hit" | "blocked" | "ko";
   attack?: "punch" | "kick";
+  attackerFacing?: -1 | 1;
   attackerId: string;
   targetId: string;
   x: number;
@@ -294,6 +295,7 @@ function resolveAttacks(state: GameState) {
         id: state.nextHitEffectId,
         kind: "blocked",
         attack: attacker.action === "kick" ? "kick" : "punch",
+        attackerFacing: attacker.facing,
         attackerId: attacker.id,
         targetId: target.id,
         x: target.x,
@@ -321,6 +323,7 @@ function resolveAttacks(state: GameState) {
       id: state.nextHitEffectId,
       kind: target.knockedOut ? "ko" : "hit",
       attack: attacker.action === "kick" ? "kick" : "punch",
+      attackerFacing: attacker.facing,
       attackerId: attacker.id,
       targetId: target.id,
       x: target.x - direction * 0.22,

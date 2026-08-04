@@ -60,11 +60,25 @@ describe("Office Karate simulation", () => {
     expect(afterHit.fighters[1].knockdownVariant).toBe("back");
     expect(afterHit.fighters[1].lastHitRegion).toBe("high");
     expect(afterHit.hitEffects).toMatchObject([
-      { kind: "hit", attack: "punch", attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
+      { kind: "hit", attack: "punch", attackerFacing: 1, attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
     ]);
 
     const afterSecondTick = tickGame(afterHit, 1 / 60);
     expect(afterSecondTick.fighters[0].score).toBe(1);
+  });
+
+  it("emits hit particles in the attacker's facing direction", () => {
+    const game = inertGame();
+    const attacker = game.fighters[0];
+    const target = game.fighters[1];
+    attacker.action = "punch";
+    attacker.actionTime = 0.195;
+    attacker.x = 1;
+    attacker.facing = -1;
+    target.x = 0.1;
+
+    const afterHit = tickGame(game, 1 / 60);
+    expect(afterHit.hitEffects.at(-1)?.attackerFacing).toBe(-1);
   });
 
   it("allows a quicker follow-up after punch and kick recovery", () => {
@@ -135,7 +149,7 @@ describe("Office Karate simulation", () => {
     expect(next.fighters[0].score).toBe(0);
     expect(next.fighters[0].attackConnected).toBe(true);
     expect(next.hitEffects).toMatchObject([
-      { kind: "blocked", attack: "punch", attackerId: "player", targetId: "cpu-1" },
+      { kind: "blocked", attack: "punch", attackerFacing: 1, attackerId: "player", targetId: "cpu-1" },
     ]);
   });
 
