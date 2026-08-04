@@ -2,6 +2,7 @@ export const MATCH_SECONDS = 60;
 export const ARENA_LIMIT = 5.6;
 export const FIXED_STEP = 1 / 60;
 export const KNOCKDOWN_DURATION = 2;
+export const BLOCK_DURATION = 1;
 export const HIT_EFFECT_DURATION = 0.68;
 
 export type HitRegion = "high" | "mid" | "low";
@@ -45,6 +46,7 @@ export type FighterState = {
   cooldown: number;
   invulnerable: number;
   attackConnected: boolean;
+  blockInputHeld: boolean;
   knockbackVelocity: number;
   knockdownVariant: KnockdownVariant;
   lastHitRegion: HitRegion | null;
@@ -55,6 +57,7 @@ export type FighterState = {
 
 export type HitEffect = {
   id: number;
+  kind: "hit" | "blocked";
   attackerId: string;
   targetId: string;
   x: number;
@@ -76,6 +79,7 @@ export type GameState = {
 const ACTION_DURATION: Partial<Record<FighterAction, number>> = {
   punch: 0.58,
   kick: 0.82,
+  block: BLOCK_DURATION,
   hit: 0.42,
   knockdown: KNOCKDOWN_DURATION,
 };
@@ -114,6 +118,7 @@ export function createGame(characterIds: string[], playerCharacterId: string, se
       cooldown: index * 0.15,
       invulnerable: 0,
       attackConnected: false,
+      blockInputHeld: false,
       knockbackVelocity: 0,
       knockdownVariant: "back",
       lastHitRegion: null,
@@ -172,6 +177,9 @@ export function tickGame(
 }
 
 function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
+  const blockPressed = Boolean(input.block) && !fighter.blockInputHeld;
+  fighter.blockInputHeld = Boolean(input.block);
+
   const duration = ACTION_DURATION[fighter.action];
   if (duration && fighter.actionTime >= duration) {
     const completedAction = fighter.action;
@@ -185,6 +193,7 @@ function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
 
   const locked = fighter.action === "punch"
     || fighter.action === "kick"
+    || fighter.action === "block"
     || fighter.action === "hit"
     || fighter.action === "knockdown"
     || fighter.action === "victory";
@@ -202,7 +211,7 @@ function updateFighter(fighter: FighterState, input: InputFrame, dt: number) {
     else if (input.jump && fighter.y <= 0.001) {
       fighter.velocityY = 5.1;
       beginAction(fighter, "jump", 0.08);
-    } else if (input.block) beginAction(fighter, "block");
+    } else if (blockPressed) beginAction(fighter, "block");
     else if (input.crouch && fighter.y <= 0.001) beginAction(fighter, "crouch");
     else {
       const direction = Number(Boolean(input.right)) - Number(Boolean(input.left));
@@ -255,6 +264,16 @@ function resolveAttacks(state: GameState) {
     const targetIsFacing = Math.sign(attacker.x - target.x) === target.facing;
     if (target.action === "block" && targetIsFacing) {
       attacker.cooldown = Math.max(attacker.cooldown, 0.28);
+      state.hitEffects.push({
+        id: state.nextHitEffectId,
+        kind: "blocked",
+        attackerId: attacker.id,
+        targetId: target.id,
+        x: target.x,
+        region: resolveHitRegion(attacker, target),
+        age: 0,
+      });
+      state.nextHitEffectId += 1;
       continue;
     }
 
@@ -271,6 +290,7 @@ function resolveAttacks(state: GameState) {
     beginAction(target, "knockdown", 0.34);
     state.hitEffects.push({
       id: state.nextHitEffectId,
+      kind: "hit",
       attackerId: attacker.id,
       targetId: target.id,
       x: target.x - direction * 0.22,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARENA_LIMIT, HIT_EFFECT_DURATION, createGame, setPaused, tickGame } from "./simulation";
+import { ARENA_LIMIT, BLOCK_DURATION, HIT_EFFECT_DURATION, createGame, setPaused, tickGame } from "./simulation";
 
 function inertGame() {
   const game = createGame(["jens", "fia", "peter"], "jens", 42);
@@ -37,7 +37,7 @@ describe("Office Karate simulation", () => {
     expect(afterHit.fighters[1].knockdownVariant).toBe("back");
     expect(afterHit.fighters[1].lastHitRegion).toBe("high");
     expect(afterHit.hitEffects).toMatchObject([
-      { attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
+      { kind: "hit", attackerId: "player", targetId: "cpu-1", region: "high", age: 0 },
     ]);
 
     const afterSecondTick = tickGame(afterHit, 1 / 60);
@@ -70,7 +70,7 @@ describe("Office Karate simulation", () => {
     const target = game.fighters[1];
     target.action = "knockdown";
     target.actionTime = 0.1;
-    game.hitEffects.push({ id: 1, attackerId: "player", targetId: target.id, x: 0, region: "mid", age: 0 });
+    game.hitEffects.push({ id: 1, kind: "hit", attackerId: "player", targetId: target.id, x: 0, region: "mid", age: 0 });
 
     const locked = tickGame(game, 1 / 60, { punch: true, right: true });
     expect(locked.fighters[1].action).toBe("knockdown");
@@ -96,6 +96,26 @@ describe("Office Karate simulation", () => {
     const next = tickGame(game, 1 / 60, { block: true });
     expect(next.fighters[0].score).toBe(0);
     expect(next.fighters[0].attackConnected).toBe(true);
+    expect(next.hitEffects).toMatchObject([
+      { kind: "blocked", attackerId: "player", targetId: "cpu-1" },
+    ]);
+  });
+
+  it("limits block to one second and requires a new button press", () => {
+    const game = inertGame();
+    game.fighters[0].action = "idle";
+
+    let next = tickGame(game, 1 / 60, { block: true });
+    expect(next.fighters[0].action).toBe("block");
+
+    for (let elapsed = 0; elapsed < BLOCK_DURATION + 0.1; elapsed += 1 / 60) {
+      next = tickGame(next, 1 / 60, { block: true });
+    }
+    expect(next.fighters[0].action).toBe("idle");
+
+    next = tickGame(next, 1 / 60, { block: false });
+    next = tickGame(next, 1 / 60, { block: true });
+    expect(next.fighters[0].action).toBe("block");
   });
 
   it("enters sudden death on a tied timer and ends on the next point", () => {

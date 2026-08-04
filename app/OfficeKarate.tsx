@@ -11,6 +11,7 @@ import { SkeletonUtils } from "three-stdlib";
 import { ACTION_ANIMATION, ANIMATIONS, CHARACTERS, type CharacterDefinition } from "../game/config";
 import {
   FIXED_STEP,
+  BLOCK_DURATION,
   KNOCKDOWN_DURATION,
   createGame,
   setPaused,
@@ -122,11 +123,15 @@ export default function OfficeKarate() {
   const newestHit = game?.hitEffects.at(-1);
   const newestHitId = newestHit?.id ?? 0;
   const newestHitRegion = newestHit?.region;
+  const newestHitKind = newestHit?.kind;
   const previousHitId = useRef(0);
   useEffect(() => {
-    if (newestHitRegion && newestHitId > previousHitId.current) audio.hit(newestHitRegion);
+    if (newestHitId > previousHitId.current) {
+      if (newestHitKind === "blocked") audio.blocked();
+      else if (newestHitRegion) audio.hit(newestHitRegion);
+    }
     previousHitId.current = newestHitId;
-  }, [audio, newestHitId, newestHitRegion]);
+  }, [audio, newestHitId, newestHitKind, newestHitRegion]);
 
   const chooseCharacter = (id: string) => {
     setSelectedId(id);
@@ -265,7 +270,7 @@ const HARNESS_ACTIONS: { value: FighterAction; label: string; duration: number }
   { value: "crouch", label: "CROUCH", duration: 2.5 },
   { value: "punch", label: "PUNCH", duration: 0.58 },
   { value: "kick", label: "KICK", duration: 0.82 },
-  { value: "block", label: "BLOCK", duration: 2.5 },
+  { value: "block", label: "BLOCK / OUTWARD", duration: BLOCK_DURATION },
   { value: "knockdown", label: "KNOCKDOWN", duration: KNOCKDOWN_DURATION },
   { value: "victory", label: "VICTORY", duration: 2.5 },
 ];
@@ -431,6 +436,7 @@ function makeHarnessFighter({
     cooldown: 0,
     invulnerable: 0,
     attackConnected: false,
+    blockInputHeld: false,
     knockbackVelocity: 0,
     knockdownVariant: variant,
     lastHitRegion: region,
@@ -455,6 +461,7 @@ function GameCanvas({ game, previewCharacter }: { game: GameState | null; previe
     cooldown: 0,
     invulnerable: 0,
     attackConnected: false,
+    blockInputHeld: false,
     knockbackVelocity: 0,
     knockdownVariant: "back",
     lastHitRegion: null,
@@ -683,6 +690,8 @@ function sampleClipAtTime(clip: THREE.AnimationClip, samplers: ClipSampler[], ac
       ? 0.82
       : action === "knockdown"
         ? KNOCKDOWN_DURATION
+        : action === "block"
+          ? BLOCK_DURATION
         : clip.duration;
   const clipTime = Math.min(clip.duration, (actionTime / targetDuration) * clip.duration);
   for (const sampler of samplers) {
@@ -733,9 +742,11 @@ function playAnimation(
     ? 0.58
     : fighterAction === "kick"
       ? 0.82
-      : fighterAction === "knockdown"
-        ? KNOCKDOWN_DURATION
-        : null;
+    : fighterAction === "knockdown"
+      ? KNOCKDOWN_DURATION
+      : fighterAction === "block"
+        ? BLOCK_DURATION
+      : null;
   next.timeScale = targetDuration ? next.getClip().duration / targetDuration : 1;
   current.current = animationId;
 }
@@ -746,7 +757,7 @@ function Scoreboard({ game }: { game: GameState }) {
       <div className="scoreboard__players">
         {game.fighters.map((fighter) => {
           const character = CHARACTERS.find((entry) => entry.id === fighter.characterId);
-          const scoring = game.hitEffects.some((effect) => effect.attackerId === fighter.id);
+          const scoring = game.hitEffects.some((effect) => effect.kind === "hit" && effect.attackerId === fighter.id);
           return (
             <div key={fighter.id} className={`score-pill ${fighter.control === "player" ? "is-player" : ""} ${scoring ? "is-scoring" : ""}`} style={{ "--fighter-color": character?.color } as React.CSSProperties}>
               <span>{fighter.control === "player" ? "1P" : "CPU"}</span>
@@ -770,18 +781,19 @@ function HitFeedback({ effects }: { effects: HitEffect[] }) {
       {effects.map((effect) => {
         const left = 8 + ((effect.x + 5.6) / 11.2) * 84;
         const top = effect.region === "high" ? 43 : effect.region === "mid" ? 51 : 60;
-        const label = effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
+        const blocked = effect.kind === "blocked";
+        const label = blocked ? "NO POINT" : effect.region === "high" ? "BONK!" : effect.region === "mid" ? "POW!" : "SWEEP!";
         return (
           <div
             key={effect.id}
-            className={`hit-feedback hit-feedback--${effect.region}`}
+            className={`hit-feedback hit-feedback--${effect.region} ${blocked ? "hit-feedback--blocked" : ""}`}
             style={{
               "--hit-left": `${left}%`,
               "--hit-top": `${top}%`,
             } as React.CSSProperties}
           >
             <span className="hit-feedback__burst" />
-            <strong>+1</strong>
+            <strong>{blocked ? "BLOCKED" : "+1"}</strong>
             <small>{label}</small>
           </div>
         );
@@ -937,6 +949,10 @@ function useArcadeAudio(muted: boolean) {
   return useMemo(() => ({
     start,
     select: () => tone(440, 0.055, "square", 0.2),
+    blocked: () => {
+      tone(680, 0.08, "square", 0.3);
+      window.setTimeout(() => tone(420, 0.11, "triangle", 0.26), 38);
+    },
     hit: (region: HitRegion) => {
       const first = region === "high" ? 126 : region === "mid" ? 92 : 68;
       const second = region === "high" ? 74 : region === "mid" ? 58 : 44;

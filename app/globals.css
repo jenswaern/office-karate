@@ -241,6 +241,7 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 }
 .hit-feedback--mid { --hit-color: var(--cyan); }
 .hit-feedback--low { --hit-color: var(--pink); }
+.hit-feedback--blocked { --hit-color: var(--cyan); }
 .hit-feedback__burst {
   position: absolute;
   inset: 5px;
@@ -273,6 +274,14 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
   text-shadow: 2px 2px 0 var(--ink);
   white-space: nowrap;
 }
+.hit-feedback--blocked strong {
+  left: 4px;
+  min-width: 80px;
+  padding-inline: 4px;
+  background: #2551d8;
+  font-size: 12px;
+}
+.hit-feedback--blocked small { color: var(--yellow); }
 
 .modal-layer {
   position: absolute;
