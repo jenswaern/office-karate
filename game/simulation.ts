@@ -1,5 +1,7 @@
 export const MATCH_SECONDS = 60;
 export const MATCH_INTRO_DURATION = 2.4;
+export const PUNCH_ACTION_DURATION = 0.46;
+export const KICK_ACTION_DURATION = 0.66;
 export const ARENA_LIMIT = 5.6;
 export const FIXED_STEP = 1 / 60;
 export const KNOCKDOWN_DURATION = 2;
@@ -85,8 +87,8 @@ export type GameState = {
 };
 
 const ACTION_DURATION: Partial<Record<FighterAction, number>> = {
-  punch: 0.58,
-  kick: 0.82,
+  punch: PUNCH_ACTION_DURATION,
+  kick: KICK_ACTION_DURATION,
   block: BLOCK_DURATION,
   hit: 0.42,
   knockdown: KNOCKDOWN_DURATION,

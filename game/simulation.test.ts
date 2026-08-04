@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARENA_LIMIT, BLOCK_DURATION, HIT_EFFECT_DURATION, MATCH_INTRO_DURATION, createGame, setPaused, tickGame } from "./simulation";
+import { ARENA_LIMIT, BLOCK_DURATION, HIT_EFFECT_DURATION, KICK_ACTION_DURATION, MATCH_INTRO_DURATION, PUNCH_ACTION_DURATION, createGame, setPaused, tickGame } from "./simulation";
 
 function inertGame() {
   const game = createGame(["jens", "fia", "peter"], "jens", 42);
@@ -65,6 +65,20 @@ describe("Office Karate simulation", () => {
 
     const afterSecondTick = tickGame(afterHit, 1 / 60);
     expect(afterSecondTick.fighters[0].score).toBe(1);
+  });
+
+  it("allows a quicker follow-up after punch and kick recovery", () => {
+    const afterPunch = inertGame();
+    afterPunch.fighters[0].action = "punch";
+    afterPunch.fighters[0].actionTime = PUNCH_ACTION_DURATION - 0.005;
+    const chainedKick = tickGame(afterPunch, 1 / 60, { kick: true });
+    expect(chainedKick.fighters[0].action).toBe("kick");
+
+    const afterKick = inertGame();
+    afterKick.fighters[0].action = "kick";
+    afterKick.fighters[0].actionTime = KICK_ACTION_DURATION - 0.005;
+    const chainedPunch = tickGame(afterKick, 1 / 60, { punch: true });
+    expect(chainedPunch.fighters[0].action).toBe("punch");
   });
 
   it("uses different falls for body and low hits", () => {
