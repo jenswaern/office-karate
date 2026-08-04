@@ -183,6 +183,7 @@ button { font: inherit; }
   gap: 18px;
   width: 100%;
   margin: 0;
+  box-shadow: inset 0 -4px 0 #d59c30, 4px 4px 0 var(--pink);
 }
 .menu-start-button:hover,
 .menu-start-button:focus-visible { transform: translateY(-1px); }
