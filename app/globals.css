@@ -277,11 +277,11 @@ kbd { border: 1px solid #68709b; color: var(--paper); min-width: 22px; padding: 
 }
 .hit-feedback__particles i {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: 2px;
+  height: 2px;
   background: var(--particle-color);
   image-rendering: pixelated;
-  animation: sweat-particle .68s linear both;
+  animation: sweat-particle .68s steps(12, end) both;
 }
 .hit-feedback__label {
   position: absolute;

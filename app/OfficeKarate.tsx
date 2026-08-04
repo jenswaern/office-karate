@@ -536,7 +536,7 @@ function StageLighting() {
         intensity={34}
         distance={20}
         angle={0.92}
-        penumbra={0.42}
+        penumbra={0.3}
         decay={1.45}
         color="#ffe0a8"
         castShadow
@@ -561,7 +561,7 @@ function Arena() {
       </mesh>
       <mesh position={[0, 1.91, -2.18]} receiveShadow renderOrder={1}>
         <planeGeometry args={[15, 8.44]} />
-        <shadowMaterial color="#111326" opacity={0.48} transparent depthWrite={false} />
+        <shadowMaterial color="#080914" opacity={0.64} transparent depthWrite={false} />
       </mesh>
       <mesh position={[0, -0.2, 0]} receiveShadow>
         <boxGeometry args={[13.5, 0.4, 4]} />
@@ -904,6 +904,14 @@ const SWEAT_PARTICLES = [
   { velocityX: 195, velocityY: -128, color: "#d9ffff" },
   { velocityX: 255, velocityY: -102, color: "#ffffff" },
   { velocityX: 360, velocityY: -96, color: "#ffffff" },
+  { velocityX: 125, velocityY: -122, color: "#67d5d2" },
+  { velocityX: 168, velocityY: -205, color: "#ffffff" },
+  { velocityX: 225, velocityY: -194, color: "#d9ffff" },
+  { velocityX: 292, velocityY: -182, color: "#ffffff" },
+  { velocityX: 335, velocityY: -126, color: "#67d5d2" },
+  { velocityX: 385, velocityY: -112, color: "#ffffff" },
+  { velocityX: 238, velocityY: -82, color: "#d9ffff" },
+  { velocityX: 305, velocityY: -72, color: "#ffffff" },
 ] as const;
 
 function HitParticles({ effect }: { effect: HitEffect }) {
