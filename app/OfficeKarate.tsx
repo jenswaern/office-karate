@@ -284,6 +284,7 @@ export function OfficeKarateHarness() {
   const [characterId, setCharacterId] = useState(CHARACTERS[0].id);
   const [action, setAction] = useState<FighterAction>("knockdown");
   const [region, setRegion] = useState<HitRegion>("high");
+  const [showKoStars, setShowKoStars] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [time, setTime] = useState(0);
   const duration = HARNESS_ACTIONS.find((entry) => entry.value === action)?.duration ?? 2.5;
@@ -324,6 +325,7 @@ export function OfficeKarateHarness() {
             action={action}
             region={region}
             time={time}
+            knockedOut={showKoStars}
           />
           <div className="harness-stage__axis" aria-hidden="true" />
           <div className="harness-stage__readout">
@@ -358,6 +360,11 @@ export function OfficeKarateHarness() {
             </div>
           </fieldset>
 
+          <label className="harness-toggle">
+            <input type="checkbox" checked={showKoStars} onChange={(event) => setShowKoStars(event.target.checked)} />
+            <span>VISA KO-STJÄRNOR</span>
+          </label>
+
           <div className="harness-control">
             <div className="harness-control__row"><label htmlFor="harness-time">TIMELINE</label><span>{time.toFixed(2)} / {duration.toFixed(2)}</span></div>
             <input id="harness-time" type="range" min="0" max={duration} step="0.01" value={time} onChange={(event) => { setPlaying(false); setTime(Number(event.target.value)); }} />
@@ -380,11 +387,13 @@ function HarnessCanvas({
   action,
   region,
   time,
+  knockedOut,
 }: {
   characterId: string;
   action: FighterAction;
   region: HitRegion;
   time: number;
+  knockedOut: boolean;
 }) {
   const variant = region === "high" ? "back" : region === "mid" ? "dying" : "sweep";
   const fighter = makeHarnessFighter({
@@ -395,6 +404,7 @@ function HarnessCanvas({
     region,
     variant,
   });
+  fighter.knockedOut = knockedOut;
   if (action === "jump") {
     const jumpTime = Math.min(time, JUMP_DURATION);
     fighter.y = Math.max(0, JUMP_VELOCITY * jumpTime - (JUMP_GRAVITY * jumpTime * jumpTime) / 2);
@@ -660,6 +670,52 @@ function FighterModel({
           scale={definition.scale}
         />
       </group>
+      {fighter.knockedOut && <KnockoutStars model={model} />}
+    </group>
+  );
+}
+
+function KnockoutStars({ model }: { model: THREE.Object3D }) {
+  const group = useRef<THREE.Group>(null);
+  const head = useMemo(() => model.getObjectByName("Head"), [model]);
+  const worldPosition = useMemo(() => new THREE.Vector3(), []);
+  const starShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    const points = [
+      [0, 0.2], [0.055, 0.055], [0.2, 0], [0.055, -0.055],
+      [0, -0.2], [-0.055, -0.055], [-0.2, 0], [-0.055, 0.055],
+    ] as const;
+    shape.moveTo(points[0][0], points[0][1]);
+    for (const [x, y] of points.slice(1)) shape.lineTo(x, y);
+    shape.closePath();
+    return shape;
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const phase = clock.elapsedTime * 3.6;
+    if (head && group.current.parent) {
+      head.getWorldPosition(worldPosition);
+      group.current.parent.worldToLocal(worldPosition);
+      group.current.position.set(worldPosition.x, worldPosition.y + 0.48, 0.58);
+    }
+    group.current.children.forEach((star, index) => {
+      const angle = phase + (index * Math.PI * 2) / 3;
+      star.position.set(Math.cos(angle) * 0.42, Math.sin(angle) * 0.11, index * 0.015);
+      star.rotation.z = -phase * 0.7 + index * 0.7;
+      const pulse = 0.82 + Math.sin(phase * 2 + index) * 0.16;
+      star.scale.setScalar(pulse);
+    });
+  });
+
+  return (
+    <group ref={group} renderOrder={20}>
+      {["#ffcf55", "#f7e9bf", "#ed467b"].map((color) => (
+        <mesh key={color}>
+          <shapeGeometry args={[starShape]} />
+          <meshBasicMaterial color={color} depthTest={false} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ))}
     </group>
   );
 }
